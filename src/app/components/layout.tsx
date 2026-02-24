@@ -1,7 +1,27 @@
 import { Outlet, Link, useLocation } from "react-router";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import logo from "figma:asset/9c94fa58f4a33a0f557c703c1db87b59b581f2b6.png";
+
+// KHUX Logo Component
+function KHUXLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="32" height="32" rx="6" fill="currentColor" fillOpacity="0.1" />
+      <path
+        d="M10 10L16 16M16 16L10 22M16 16L22 10M16 16L22 22"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function Layout() {
   const location = useLocation();
@@ -47,7 +67,7 @@ export function Layout() {
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2" onClick={handleLogoClick}>
-              <img src={logo} alt="KHUX Logo" className="h-8 w-8" />
+              <KHUXLogo className="h-8 w-8" />
               <div className="text-2xl font-bold tracking-tight">KHUX</div>
             </Link>
 
