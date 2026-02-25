@@ -11,6 +11,40 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
+// Initialize default admin account on startup
+async function initializeDefaultAdmin() {
+  try {
+    const defaultEmail = 'admin@khux.com';
+    const defaultPassword = 'admin';
+    
+    // Check if admin user already exists
+    const { data: users } = await supabase.auth.admin.listUsers();
+    const adminExists = users?.users?.some(user => user.email === defaultEmail);
+    
+    if (!adminExists) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: defaultEmail,
+        password: defaultPassword,
+        user_metadata: { name: 'KHUX Admin', role: 'admin' },
+        email_confirm: true
+      });
+      
+      if (error) {
+        console.log(`Failed to create default admin: ${error.message}`);
+      } else {
+        console.log('✅ Default admin account created: admin@khux.com / admin');
+      }
+    } else {
+      console.log('ℹ️ Default admin account already exists');
+    }
+  } catch (error) {
+    console.log(`Error initializing default admin: ${error}`);
+  }
+}
+
+// Initialize admin account
+initializeDefaultAdmin();
+
 // Enable logger
 app.use('*', logger(console.log));
 
