@@ -9,7 +9,8 @@ import {
   Newspaper as NewspaperIcon,
   Users,
   Search,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 import { supabase, API_BASE_URL } from "../../utils/supabase-client";
 import type { Article, NewsItem } from "../data/mock-data";
@@ -22,6 +23,9 @@ export function AdminDashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     // Check authentication
@@ -134,6 +138,88 @@ export function AdminDashboard() {
   const filteredNews = news.filter((item) =>
     item.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleAddArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessToken) return;
+    
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/articles`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          excerpt: formData.excerpt,
+          content: formData.content,
+          author: formData.author,
+          team: formData.team,
+          date: formData.date || new Date().toISOString().split('T')[0],
+          imageUrl: formData.imageUrl || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800",
+          tags: formData.tags ? formData.tags.split(',').map((t: string) => t.trim()) : [],
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setArticles([data.article, ...articles]);
+        setShowAddModal(false);
+        setFormData({});
+        alert("아티클이 추가되었습니다!");
+      } else {
+        const error = await res.json();
+        console.error("Failed to add article:", error);
+        alert("아티클 추가에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Error adding article:", error);
+      alert("아티클 추가 중 오류가 발생했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessToken) return;
+    
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/news`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          content: formData.content,
+          date: formData.date || new Date().toISOString().split('T')[0],
+          category: formData.category,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setNews([data.news, ...news]);
+        setShowAddModal(false);
+        setFormData({});
+        alert("뉴스가 추가되었습니다!");
+      } else {
+        const error = await res.json();
+        console.error("Failed to add news:", error);
+        alert("뉴스 추가에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Error adding news:", error);
+      alert("뉴스 추가 중 오류가 발생했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -263,7 +349,7 @@ export function AdminDashboard() {
               className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
-          <button className="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+          <button className="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors" onClick={() => setShowAddModal(true)}>
             <PlusCircle className="h-5 w-5" />
             {activeTab === "articles" ? "아티클 추가" : "뉴스 추가"}
           </button>
@@ -330,6 +416,178 @@ export function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-background border border-border rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-background border-b border-border p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold">
+                {activeTab === "articles" ? "아티클 추가" : "뉴스 추가"}
+              </h2>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-muted rounded-lg transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={activeTab === "articles" ? handleAddArticle : handleAddNews} className="p-6 space-y-4">
+              {activeTab === "articles" ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">제목 *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title || ""}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder="아티클 제목"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">요약 *</label>
+                    <textarea
+                      required
+                      value={formData.excerpt || ""}
+                      onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                      rows={2}
+                      placeholder="아티클 요약"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">본문 *</label>
+                    <textarea
+                      required
+                      value={formData.content || ""}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                      rows={6}
+                      placeholder="아티클 본문"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">작성자 *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.author || ""}
+                        onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        placeholder="작성자 이름"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">팀 *</label>
+                      <select
+                        required
+                        value={formData.team || ""}
+                        onChange={(e) => setFormData({ ...formData, team: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      >
+                        <option value="">팀 선택</option>
+                        <option value="Leaders">Leaders</option>
+                        <option value="Education">Education</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Growth">Growth</option>
+                        <option value="Brand">Brand</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">태그 (쉼표로 구분)</label>
+                    <input
+                      type="text"
+                      value={formData.tags || ""}
+                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder="UX, Design, Research"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">이미지 URL (선택)</label>
+                    <input
+                      type="url"
+                      value={formData.imageUrl || ""}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">제목 *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title || ""}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder="뉴스 제목"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">내용 *</label>
+                    <textarea
+                      required
+                      value={formData.content || ""}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                      rows={6}
+                      placeholder="뉴스 내용"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">카테고리 *</label>
+                    <select
+                      required
+                      value={formData.category || ""}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      <option value="">카테고리 선택</option>
+                      <option value="Recruitment">Recruitment</option>
+                      <option value="Event">Event</option>
+                      <option value="Project">Project</option>
+                      <option value="Announcement">Announcement</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-6 py-3 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors"
+                  disabled={submitting}
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {submitting ? "추가 중..." : "추가하기"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
