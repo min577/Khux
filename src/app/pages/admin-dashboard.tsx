@@ -28,26 +28,27 @@ export function AdminDashboard() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Check authentication
     const checkAuth = async () => {
-      const token = localStorage.getItem("admin_access_token");
-      if (!token) {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
         navigate("/admin/login");
         return;
       }
-      
-      // Verify token is still valid
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      if (error || !user) {
-        localStorage.removeItem("admin_access_token");
-        navigate("/admin/login");
-        return;
-      }
-      
-      setAccessToken(token);
+      setAccessToken(session.access_token);
     };
 
     checkAuth();
+
+    // Listen for token refresh
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setAccessToken(session.access_token);
+      } else {
+        navigate("/admin/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   useEffect(() => {
@@ -77,18 +78,23 @@ export function AdminDashboard() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem("admin_access_token");
     navigate("/admin/login");
   };
 
   const handleDeleteArticle = async (id: string) => {
-    if (!accessToken || !confirm("정말로 이 아티클을 삭제하시겠습니까?")) return;
+    if (!confirm("정말로 이 아티클을 삭제하시겠습니까?")) return;
+    const token = await getValidToken();
+    if (!token) {
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
+      return;
+    }
 
     try {
       const res = await fetch(`${API_BASE_URL}/articles/${id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -106,13 +112,19 @@ export function AdminDashboard() {
   };
 
   const handleDeleteNews = async (id: string) => {
-    if (!accessToken || !confirm("정말로 이 뉴스를 삭제하시겠습니까?")) return;
+    if (!confirm("정말로 이 뉴스를 삭제하시겠습니까?")) return;
+    const token = await getValidToken();
+    if (!token) {
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
+      return;
+    }
 
     try {
       const res = await fetch(`${API_BASE_URL}/news/${id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -139,17 +151,31 @@ export function AdminDashboard() {
     item.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const getValidToken = async (): Promise<string | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      setAccessToken(session.access_token);
+      return session.access_token;
+    }
+    return null;
+  };
+
   const handleAddArticle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!accessToken) return;
-    
+    const token = await getValidToken();
+    if (!token) {
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE_URL}/articles`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: formData.title,
@@ -184,15 +210,20 @@ export function AdminDashboard() {
 
   const handleAddNews = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!accessToken) return;
-    
+    const token = await getValidToken();
+    if (!token) {
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE_URL}/news`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: formData.title,

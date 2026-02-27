@@ -29,8 +29,6 @@ export function AdminLogin() {
       }
 
       if (data.session) {
-        // Store session token
-        localStorage.setItem("admin_access_token", data.session.access_token);
         navigate("/admin/dashboard");
       }
     } catch (err) {
