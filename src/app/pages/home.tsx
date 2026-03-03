@@ -5,7 +5,7 @@ import { teams } from "../data/mock-data";
 import type { Article, NewsItem } from "../data/mock-data";
 import { ArticleCard } from "../components/article-card";
 import { NewsCard } from "../components/news-card";
-import { API_BASE_URL } from "../../utils/supabase-client";
+import { apiFetch } from "../../utils/supabase-client";
 
 export function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,12 +19,12 @@ export function Home() {
     const fetchData = async () => {
       try {
         // Fetch articles
-        const articlesRes = await fetch(`${API_BASE_URL}/articles`);
+        const articlesRes = await apiFetch("/articles");
         const articlesData = await articlesRes.json();
         setArticles(articlesData.articles || []);
 
         // Fetch news
-        const newsRes = await fetch(`${API_BASE_URL}/news`);
+        const newsRes = await apiFetch("/news");
         const newsData = await newsRes.json();
         setNews(newsData.news || []);
       } catch (error) {

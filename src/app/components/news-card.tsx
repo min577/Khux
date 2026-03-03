@@ -20,22 +20,31 @@ export function NewsCard({ news }: NewsCardProps) {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className={`text-xs px-2 py-1 rounded-md ${
-            categoryColors[news.category] || "bg-accent text-accent-foreground"
-          }`}
-        >
-          {news.category}
-        </span>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Calendar className="h-3 w-3" />
-          <span>{formattedDate}</span>
+    <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+      {news.imageUrl && (
+        <img
+          src={news.imageUrl}
+          alt={news.title}
+          className="w-full h-48 object-cover"
+        />
+      )}
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-3">
+          <span
+            className={`text-xs px-2 py-1 rounded-md ${
+              categoryColors[news.category] || "bg-accent text-accent-foreground"
+            }`}
+          >
+            {news.category}
+          </span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>{formattedDate}</span>
+          </div>
         </div>
+        <h3 className="mb-3">{news.title}</h3>
+        <p className="text-sm text-muted-foreground">{news.content}</p>
       </div>
-      <h3 className="mb-3">{news.title}</h3>
-      <p className="text-sm text-muted-foreground">{news.content}</p>
     </div>
   );
 }

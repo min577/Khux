@@ -3,7 +3,7 @@ import { useParams, Link, Navigate } from "react-router";
 import { ArrowLeft, Calendar, User, Tag, Loader2 } from "lucide-react";
 import type { Article } from "../data/mock-data";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { API_BASE_URL } from "../../utils/supabase-client";
+import { apiFetch } from "../../utils/supabase-client";
 
 export function ArticleDetail() {
   const { id } = useParams();
@@ -17,8 +17,7 @@ export function ArticleDetail() {
       if (!id) return;
 
       try {
-        // Fetch the specific article
-        const res = await fetch(`${API_BASE_URL}/articles/${id}`);
+        const res = await apiFetch(`/articles/${id}`);
         if (!res.ok) {
           setNotFound(true);
           setLoading(false);
@@ -28,8 +27,7 @@ export function ArticleDetail() {
         const data = await res.json();
         setArticle(data.article);
 
-        // Fetch all articles for related articles
-        const allRes = await fetch(`${API_BASE_URL}/articles`);
+        const allRes = await apiFetch("/articles");
         const allData = await allRes.json();
         const related = (allData.articles || [])
           .filter((a: Article) => a.id !== id)

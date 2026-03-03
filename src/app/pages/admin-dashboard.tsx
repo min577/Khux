@@ -12,7 +12,7 @@ import {
   Loader2,
   X
 } from "lucide-react";
-import { supabase, API_BASE_URL } from "../../utils/supabase-client";
+import { supabase, apiFetch, apiFetchAuth, uploadImage } from "../../utils/supabase-client";
 import type { Article, NewsItem } from "../data/mock-data";
 
 export function AdminDashboard() {
@@ -22,10 +22,12 @@ export function AdminDashboard() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [authenticated, setAuthenticated] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -34,16 +36,13 @@ export function AdminDashboard() {
         navigate("/admin/login");
         return;
       }
-      setAccessToken(session.access_token);
+      setAuthenticated(true);
     };
 
     checkAuth();
 
-    // Listen for token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setAccessToken(session.access_token);
-      } else {
+      if (!session) {
         navigate("/admin/login");
       }
     });
@@ -52,21 +51,19 @@ export function AdminDashboard() {
   }, [navigate]);
 
   useEffect(() => {
-    if (accessToken) {
+    if (authenticated) {
       fetchData();
     }
-  }, [accessToken]);
+  }, [authenticated]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch articles
-      const articlesRes = await fetch(`${API_BASE_URL}/articles`);
+      const articlesRes = await apiFetch("/articles");
       const articlesData = await articlesRes.json();
       setArticles(articlesData.articles || []);
 
-      // Fetch news
-      const newsRes = await fetch(`${API_BASE_URL}/news`);
+      const newsRes = await apiFetch("/news");
       const newsData = await newsRes.json();
       setNews(newsData.news || []);
     } catch (error) {
@@ -83,20 +80,9 @@ export function AdminDashboard() {
 
   const handleDeleteArticle = async (id: string) => {
     if (!confirm("정말로 이 아티클을 삭제하시겠습니까?")) return;
-    const token = await getValidToken();
-    if (!token) {
-      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
-      navigate("/admin/login");
-      return;
-    }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/articles/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await apiFetchAuth(`/articles/${id}`, { method: "DELETE" });
 
       if (res.ok) {
         setArticles(articles.filter((a) => a.id !== id));
@@ -107,26 +93,16 @@ export function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error deleting article:", error);
-      alert("아티클 삭제 중 오류가 발생했습니다.");
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
     }
   };
 
   const handleDeleteNews = async (id: string) => {
     if (!confirm("정말로 이 뉴스를 삭제하시겠습니까?")) return;
-    const token = await getValidToken();
-    if (!token) {
-      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
-      navigate("/admin/login");
-      return;
-    }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/news/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await apiFetchAuth(`/news/${id}`, { method: "DELETE" });
 
       if (res.ok) {
         setNews(news.filter((n) => n.id !== id));
@@ -137,7 +113,8 @@ export function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error deleting news:", error);
-      alert("뉴스 삭제 중 오류가 발생했습니다.");
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
     }
   };
 
@@ -151,32 +128,33 @@ export function AdminDashboard() {
     item.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getValidToken = async (): Promise<string | null> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      setAccessToken(session.access_token);
-      return session.access_token;
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
     }
-    return null;
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleAddArticle = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = await getValidToken();
-    if (!token) {
-      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
-      navigate("/admin/login");
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/articles`, {
+      let imageUrl = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800";
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
+      const res = await apiFetchAuth("/articles", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: formData.title,
           excerpt: formData.excerpt,
@@ -184,7 +162,7 @@ export function AdminDashboard() {
           author: formData.author,
           team: formData.team,
           date: formData.date || new Date().toISOString().split('T')[0],
-          imageUrl: formData.imageUrl || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800",
+          imageUrl,
           tags: formData.tags ? formData.tags.split(',').map((t: string) => t.trim()) : [],
         }),
       });
@@ -194,6 +172,7 @@ export function AdminDashboard() {
         setArticles([data.article, ...articles]);
         setShowAddModal(false);
         setFormData({});
+        clearImage();
         alert("아티클이 추가되었습니다!");
       } else {
         const error = await res.json();
@@ -202,7 +181,8 @@ export function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error adding article:", error);
-      alert("아티클 추가 중 오류가 발생했습니다.");
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
     } finally {
       setSubmitting(false);
     }
@@ -210,26 +190,22 @@ export function AdminDashboard() {
 
   const handleAddNews = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = await getValidToken();
-    if (!token) {
-      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
-      navigate("/admin/login");
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/news`, {
+      let imageUrl: string | undefined;
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
+      const res = await apiFetchAuth("/news", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: formData.title,
           content: formData.content,
           date: formData.date || new Date().toISOString().split('T')[0],
           category: formData.category,
+          ...(imageUrl && { imageUrl }),
         }),
       });
 
@@ -238,6 +214,7 @@ export function AdminDashboard() {
         setNews([data.news, ...news]);
         setShowAddModal(false);
         setFormData({});
+        clearImage();
         alert("뉴스가 추가되었습니다!");
       } else {
         const error = await res.json();
@@ -246,7 +223,8 @@ export function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error adding news:", error);
-      alert("뉴스 추가 중 오류가 발생했습니다.");
+      alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+      navigate("/admin/login");
     } finally {
       setSubmitting(false);
     }
@@ -424,7 +402,7 @@ export function AdminDashboard() {
               onClick={async () => {
                 if (confirm("샘플 데이터를 초기화하시겠습니까? (기존 데이터가 있다면 덮어씌워집니다)")) {
                   try {
-                    const res = await fetch(`${API_BASE_URL}/init-sample-data`, {
+                    const res = await apiFetch("/init-sample-data", {
                       method: "POST",
                     });
                     const data = await res.json();
@@ -450,13 +428,13 @@ export function AdminDashboard() {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => { setShowAddModal(false); clearImage(); }}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-background border border-border rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-background border-b border-border p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold">
                 {activeTab === "articles" ? "아티클 추가" : "뉴스 추가"}
               </h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-muted rounded-lg transition-colors">
+              <button onClick={() => { setShowAddModal(false); clearImage(); }} className="p-2 hover:bg-muted rounded-lg transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -543,14 +521,25 @@ export function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">이미지 URL (선택)</label>
+                    <label className="block text-sm font-medium mb-2">이미지 첨부 (선택)</label>
                     <input
-                      type="url"
-                      value={formData.imageUrl || ""}
-                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                      placeholder="https://example.com/image.jpg"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                     />
+                    {imagePreview && (
+                      <div className="mt-3 relative inline-block">
+                        <img src={imagePreview} alt="미리보기" className="max-h-40 rounded-lg border border-border" />
+                        <button
+                          type="button"
+                          onClick={clearImage}
+                          className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -594,13 +583,35 @@ export function AdminDashboard() {
                       <option value="Announcement">Announcement</option>
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">이미지 첨부 (선택)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                    />
+                    {imagePreview && (
+                      <div className="mt-3 relative inline-block">
+                        <img src={imagePreview} alt="미리보기" className="max-h-40 rounded-lg border border-border" />
+                        <button
+                          type="button"
+                          onClick={clearImage}
+                          className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => { setShowAddModal(false); clearImage(); }}
                   className="flex-1 px-6 py-3 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors"
                   disabled={submitting}
                 >

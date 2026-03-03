@@ -16,6 +16,7 @@ export interface NewsItem {
   content: string;
   date: string;
   category: string;
+  imageUrl?: string;
 }
 
 export interface Team {
