@@ -9,34 +9,19 @@ export function Layout() {
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   const navItems = [
-    { id: "about", label: "About" },
-    { id: "articles", label: "Articles" },
-    { id: "news", label: "News" },
+    { path: "/about", label: "About" },
+    { path: "/articles", label: "Articles" },
+    { path: "/activities", label: "Activities" },
+    { path: "/gallery", label: "Gallery" },
+    { path: "/news", label: "News" },
+    { path: "/recruit", label: "Recruit" },
   ];
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const offset = 80; // Header height offset
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
-    }
-    setMobileMenuOpen(false);
-  };
-
-  const handleLogoClick = () => {
-    if (location.pathname === "/") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -45,27 +30,25 @@ export function Layout() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center" onClick={handleLogoClick}>
+            <Link to="/" className="flex items-center">
               <div className="text-2xl font-bold tracking-tight">KHUX</div>
             </Link>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
               {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)}
-                  className="text-sm font-medium tracking-wide transition-colors uppercase text-foreground/60 hover:text-foreground"
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`text-sm font-medium tracking-wide transition-colors uppercase ${
+                    isActive(item.path)
+                      ? "text-foreground"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
                 >
                   {item.label}
-                </button>
+                </Link>
               ))}
-              <Link
-                to="/admin/login"
-                className="text-sm font-medium tracking-wide transition-colors uppercase text-foreground/60 hover:text-foreground"
-              >
-                Admin
-              </Link>
             </nav>
 
             {/* Mobile menu button */}
@@ -86,21 +69,18 @@ export function Layout() {
           {mobileMenuOpen && (
             <nav className="md:hidden py-4 space-y-2">
               {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)}
-                  className="block w-full text-left px-4 py-2 rounded-md transition-colors text-foreground/70 hover:text-foreground hover:bg-accent"
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`block w-full text-left px-4 py-2 rounded-md transition-colors ${
+                    isActive(item.path)
+                      ? "text-foreground bg-accent"
+                      : "text-foreground/70 hover:text-foreground hover:bg-accent"
+                  }`}
                 >
                   {item.label}
-                </button>
+                </Link>
               ))}
-              <Link
-                to="/admin/login"
-                className="block w-full text-left px-4 py-2 rounded-md transition-colors text-foreground/70 hover:text-foreground hover:bg-accent"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Admin
-              </Link>
             </nav>
           )}
         </div>
@@ -131,16 +111,16 @@ export function Layout() {
               </ul>
             </div>
             <div>
-              <h4 className="mb-3">Sections</h4>
+              <h4 className="mb-3">Pages</h4>
               <ul className="space-y-2">
                 {navItems.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => scrollToSection(item.id)}
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
                       className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {item.label}
-                    </button>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -150,8 +130,8 @@ export function Layout() {
               <p className="text-sm text-muted-foreground">
                 Email: khux@khu.ac.kr
               </p>
-              <Link 
-                to="/admin/login" 
+              <Link
+                to="/admin/login"
                 className="inline-block mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Admin
@@ -159,9 +139,12 @@ export function Layout() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} KHUX. All rights reserved.{" "}
-            <Link to="/admin/login" className="opacity-30 hover:opacity-100 transition-opacity">
-              •
+            &copy; {new Date().getFullYear()} KHUX. All rights reserved.{" "}
+            <Link
+              to="/admin/login"
+              className="opacity-30 hover:opacity-100 transition-opacity"
+            >
+              &bull;
             </Link>
           </div>
         </div>

@@ -1,17 +1,35 @@
-import { useState } from "react";
-import { news } from "../data/mock-data";
+import { useState, useEffect } from "react";
+import type { NewsItem } from "../data/mock-data";
+import { news as mockNews } from "../data/mock-data";
 import { NewsCard } from "../components/news-card";
+import { apiFetch } from "../../utils/supabase-client";
 
 export function News() {
+  const [items, setItems] = useState<NewsItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Get all unique categories
-  const categories = Array.from(new Set(news.map((item) => item.category)));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await apiFetch("/news");
+        const data = await res.json();
+        const fetched = data.news || [];
+        setItems(fetched.length > 0 ? fetched : mockNews);
+      } catch {
+        setItems(mockNews);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  // Filter news
+  const categories = Array.from(new Set(items.map((item) => item.category)));
+
   const filteredNews = selectedCategory
-    ? news.filter((item) => item.category === selectedCategory)
-    : news;
+    ? items.filter((item) => item.category === selectedCategory)
+    : items;
 
   return (
     <div className="w-full py-12 sm:py-20">
@@ -55,12 +73,24 @@ export function News() {
           </div>
         </div>
 
-        {/* News Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNews.map((item) => (
-            <NewsCard key={item.id} news={item} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">로딩 중...</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredNews.map((item) => (
+                <NewsCard key={item.id} news={item} />
+              ))}
+            </div>
+            {filteredNews.length === 0 && (
+              <div className="text-center py-20">
+                <p className="text-muted-foreground">해당 카테고리의 소식이 없습니다.</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

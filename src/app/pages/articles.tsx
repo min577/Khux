@@ -1,23 +1,41 @@
-import { useState } from "react";
-import { articles } from "../data/mock-data";
+import { useState, useEffect } from "react";
+import type { Article } from "../data/mock-data";
+import { articles as mockArticles } from "../data/mock-data";
 import { ArticleCard } from "../components/article-card";
 import { Search } from "lucide-react";
+import { apiFetch } from "../../utils/supabase-client";
 
 export function Articles() {
+  const [items, setItems] = useState<Article[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Get all unique tags
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await apiFetch("/articles");
+        const data = await res.json();
+        const fetched = data.articles || [];
+        setItems(fetched.length > 0 ? fetched : mockArticles);
+      } catch {
+        setItems(mockArticles);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const allTags = Array.from(
-    new Set(articles.flatMap((article) => article.tags))
+    new Set(items.flatMap((article) => article.tags || []))
   );
 
-  // Filter articles
-  const filteredArticles = articles.filter((article) => {
+  const filteredArticles = items.filter((article) => {
     const matchesSearch =
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = selectedTag ? article.tags.includes(selectedTag) : true;
+      article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.excerpt?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTag = selectedTag ? article.tags?.includes(selectedTag) : true;
     return matchesSearch && matchesTag;
   });
 
@@ -74,8 +92,11 @@ export function Articles() {
           </div>
         </div>
 
-        {/* Articles Grid */}
-        {filteredArticles.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">로딩 중...</p>
+          </div>
+        ) : filteredArticles.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredArticles.map((article) => (
               <ArticleCard key={article.id} article={article} />

@@ -25,6 +25,26 @@ export interface Team {
   responsibilities: string[];
 }
 
+export interface GalleryItem {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  category: string;
+  date: string;
+}
+
+export interface Activity {
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  date: string;
+  category: string;
+  imageUrl?: string;
+  participants?: string[];
+}
+
 export const articles: Article[] = [
   {
     id: "1",
@@ -128,6 +148,96 @@ export const news: NewsItem[] = [
       "KHUX 3기 멤버들의 1년간의 프로젝트 결과물을 전시하는 행사가 성황리에 종료되었습니다. 많은 학생들이 방문하여 높은 관심을 보여주셨습니다. 프로젝트 결과물은 온라인에서도 확인하실 수 있습니다.",
     date: "2026-02-05",
     category: "Event",
+  },
+];
+
+export const gallery: GalleryItem[] = [
+  {
+    id: "1",
+    title: "3기 OT & 팀빌딩",
+    description: "KHUX 3기 오리엔테이션과 팀빌딩 현장입니다.",
+    imageUrl: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800",
+    category: "행사",
+    date: "2025-09-01",
+  },
+  {
+    id: "2",
+    title: "UX 리서치 워크숍",
+    description: "사용자 인터뷰 실습과 어피니티 다이어그램 워크숍 진행",
+    imageUrl: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800",
+    category: "워크숍",
+    date: "2025-10-15",
+  },
+  {
+    id: "3",
+    title: "기업 연계 프로젝트 발표",
+    description: "테크 기업과의 협업 프로젝트 최종 발표 현장",
+    imageUrl: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800",
+    category: "프로젝트",
+    date: "2025-12-10",
+  },
+  {
+    id: "4",
+    title: "디자인 시스템 스터디",
+    description: "Figma를 활용한 디자인 시스템 구축 스터디",
+    imageUrl: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800",
+    category: "스터디",
+    date: "2025-11-20",
+  },
+  {
+    id: "5",
+    title: "3기 프로젝트 전시회",
+    description: "한 학기 동안의 프로젝트 결과물 전시",
+    imageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800",
+    category: "행사",
+    date: "2026-01-15",
+  },
+  {
+    id: "6",
+    title: "네트워킹 데이",
+    description: "현직 UX 디자이너와 함께한 네트워킹 행사",
+    imageUrl: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800",
+    category: "행사",
+    date: "2026-02-01",
+  },
+];
+
+export const activities: Activity[] = [
+  {
+    id: "1",
+    title: "정기 세미나",
+    description: "매주 진행되는 UX/UI 관련 세미나",
+    content: "매주 목요일 저녁, KHUX 멤버들이 모여 UX/UI 관련 주제에 대해 발표하고 토론합니다. 최신 트렌드, 케이스 스터디, 리서치 방법론 등 다양한 주제를 다루며, 외부 연사 초청 세미나도 정기적으로 진행합니다.",
+    date: "2026-03-01",
+    category: "세미나",
+    imageUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800",
+  },
+  {
+    id: "2",
+    title: "UX 리서치 프로젝트",
+    description: "실제 서비스를 대상으로 한 사용자 리서치",
+    content: "팀별로 실제 서비스를 선정하여 사용자 리서치를 진행합니다. 인터뷰, 설문조사, 사용성 테스트 등 다양한 리서치 방법론을 실습하고, 인사이트를 도출하여 개선안을 제안합니다.",
+    date: "2026-02-15",
+    category: "프로젝트",
+    imageUrl: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800",
+  },
+  {
+    id: "3",
+    title: "디자인 스프린트",
+    description: "5일간의 집중 디자인 스프린트 프로그램",
+    content: "Google Ventures의 디자인 스프린트 방법론을 기반으로, 5일간 집중적으로 문제 정의부터 프로토타입 제작, 사용자 테스트까지 진행하는 프로그램입니다.",
+    date: "2026-01-20",
+    category: "워크숍",
+    imageUrl: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800",
+  },
+  {
+    id: "4",
+    title: "포트폴리오 리뷰",
+    description: "현직 디자이너와 함께하는 포트폴리오 피드백 세션",
+    content: "현직 UX/UI 디자이너를 초청하여 멤버들의 포트폴리오를 리뷰하고 피드백을 받는 시간입니다. 실무에서 요구하는 포트폴리오의 방향성과 구성에 대한 조언을 얻을 수 있습니다.",
+    date: "2026-02-28",
+    category: "네트워킹",
+    imageUrl: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800",
   },
 ];
 
