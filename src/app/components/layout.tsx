@@ -31,7 +31,7 @@ export function Layout() {
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center">
-              <div className="text-2xl font-bold tracking-tight">KHUX</div>
+              <div className="text-xl font-semibold tracking-tight" style={{ fontFamily: "'Inter', sans-serif" }}>KHUX</div>
             </Link>
 
             {/* Desktop Navigation */}
