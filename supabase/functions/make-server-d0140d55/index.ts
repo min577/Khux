@@ -53,7 +53,7 @@ app.use(
   "/*",
   cors({
     origin: "*",
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "x-user-token"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
@@ -129,7 +129,7 @@ app.get("/make-server-d0140d55/articles/:id", async (c) => {
 // Create new article (protected)
 app.post("/make-server-d0140d55/articles", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
     if (!user || authError) {
@@ -156,7 +156,7 @@ app.post("/make-server-d0140d55/articles", async (c) => {
 // Update article (protected)
 app.put("/make-server-d0140d55/articles/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
     if (!user || authError) {
@@ -189,7 +189,7 @@ app.put("/make-server-d0140d55/articles/:id", async (c) => {
 // Delete article (protected)
 app.delete("/make-server-d0140d55/articles/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
     if (!user || authError) {
@@ -238,7 +238,7 @@ app.get("/make-server-d0140d55/news/:id", async (c) => {
 // Create new news (protected)
 app.post("/make-server-d0140d55/news", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
     if (!user || authError) {
@@ -265,7 +265,7 @@ app.post("/make-server-d0140d55/news", async (c) => {
 // Update news (protected)
 app.put("/make-server-d0140d55/news/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
     if (!user || authError) {
@@ -298,7 +298,7 @@ app.put("/make-server-d0140d55/news/:id", async (c) => {
 // Delete news (protected)
 app.delete("/make-server-d0140d55/news/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     
     if (!user || authError) {
@@ -343,7 +343,7 @@ app.get("/make-server-d0140d55/gallery/:id", async (c) => {
 // Create gallery item (protected)
 app.post("/make-server-d0140d55/gallery", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -361,7 +361,7 @@ app.post("/make-server-d0140d55/gallery", async (c) => {
 // Update gallery item (protected)
 app.put("/make-server-d0140d55/gallery/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -382,7 +382,7 @@ app.put("/make-server-d0140d55/gallery/:id", async (c) => {
 // Delete gallery item (protected)
 app.delete("/make-server-d0140d55/gallery/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -424,7 +424,7 @@ app.get("/make-server-d0140d55/activities/:id", async (c) => {
 // Create activity (protected)
 app.post("/make-server-d0140d55/activities", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -442,7 +442,7 @@ app.post("/make-server-d0140d55/activities", async (c) => {
 // Update activity (protected)
 app.put("/make-server-d0140d55/activities/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -463,7 +463,7 @@ app.put("/make-server-d0140d55/activities/:id", async (c) => {
 // Delete activity (protected)
 app.delete("/make-server-d0140d55/activities/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -481,7 +481,7 @@ app.delete("/make-server-d0140d55/activities/:id", async (c) => {
 // Get all applications (protected - admin only)
 app.get("/make-server-d0140d55/applications", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -521,7 +521,7 @@ app.post("/make-server-d0140d55/applications", async (c) => {
 // Update application status (protected - admin only)
 app.put("/make-server-d0140d55/applications/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 
@@ -542,7 +542,7 @@ app.put("/make-server-d0140d55/applications/:id", async (c) => {
 // Delete application (protected - admin only)
 app.delete("/make-server-d0140d55/applications/:id", async (c) => {
   try {
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const accessToken = c.req.header('x-user-token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
     if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
 

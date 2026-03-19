@@ -44,7 +44,8 @@ export async function apiFetchAuth(path: string, options: RequestInit = {}) {
   if (!session) throw new Error("Not authenticated");
 
   const headers = new Headers(options.headers);
-  headers.set("Authorization", `Bearer ${session.access_token}`);
+  headers.set("Authorization", `Bearer ${publicAnonKey}`);
+  headers.set("x-user-token", session.access_token);
 
   return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
 }
