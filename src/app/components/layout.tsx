@@ -5,23 +5,70 @@ import { useState, useEffect } from "react";
 export function Layout() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
 
-  // Scroll to top on route change
+  const isHome = location.pathname === "/";
+
+  const navItems = [
+    { id: "about", label: "About" },
+    { id: "articles", label: "Articles" },
+    { id: "activities", label: "Activities" },
+    { id: "gallery", label: "Gallery" },
+    { id: "news", label: "News" },
+    { id: "recruit", label: "Recruit" },
+  ];
+
+  // Track active section on scroll (only on home page)
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (!isHome) return;
+
+    const handleScroll = () => {
+      const sections = navItems.map(item => document.getElementById(item.id));
+      const scrollPos = window.scrollY + 100;
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i];
+        if (section && section.offsetTop <= scrollPos) {
+          setActiveSection(navItems[i].id);
+          return;
+        }
+      }
+      setActiveSection("");
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isHome]);
+
+  // Scroll to top on non-home route change
+  useEffect(() => {
+    if (!isHome) {
+      window.scrollTo(0, 0);
+    }
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const navItems = [
-    { path: "/about", label: "About" },
-    { path: "/articles", label: "Articles" },
-    { path: "/activities", label: "Activities" },
-    { path: "/gallery", label: "Gallery" },
-    { path: "/news", label: "News" },
-    { path: "/recruit", label: "Recruit" },
-  ];
+  const scrollToSection = (id: string) => {
+    if (!isHome) {
+      window.location.href = `/#${id}`;
+      return;
+    }
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+    setMobileMenuOpen(false);
+  };
 
-  const isActive = (path: string) => location.pathname === path;
+  const scrollToTop = () => {
+    if (!isHome) {
+      window.location.href = "/";
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setMobileMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,24 +77,24 @@ export function Layout() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center">
+            <button onClick={scrollToTop} className="flex items-center">
               <div className="text-xl font-semibold tracking-tight" style={{ fontFamily: "'Inter', sans-serif" }}>KHUX</div>
-            </Link>
+            </button>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
               {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
                   className={`text-sm font-medium tracking-wide transition-colors uppercase ${
-                    isActive(item.path)
+                    activeSection === item.id
                       ? "text-foreground"
                       : "text-foreground/60 hover:text-foreground"
                   }`}
                 >
                   {item.label}
-                </Link>
+                </button>
               ))}
             </nav>
 
@@ -69,17 +116,17 @@ export function Layout() {
           {mobileMenuOpen && (
             <nav className="md:hidden py-4 space-y-2">
               {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
                   className={`block w-full text-left px-4 py-2 rounded-md transition-colors ${
-                    isActive(item.path)
+                    activeSection === item.id
                       ? "text-foreground bg-accent"
                       : "text-foreground/70 hover:text-foreground hover:bg-accent"
                   }`}
                 >
                   {item.label}
-                </Link>
+                </button>
               ))}
             </nav>
           )}
@@ -114,13 +161,13 @@ export function Layout() {
               <h4 className="mb-3">Pages</h4>
               <ul className="space-y-2">
                 {navItems.map((item) => (
-                  <li key={item.path}>
-                    <Link
-                      to={item.path}
+                  <li key={item.id}>
+                    <button
+                      onClick={() => scrollToSection(item.id)}
                       className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {item.label}
-                    </Link>
+                    </button>
                   </li>
                 ))}
               </ul>

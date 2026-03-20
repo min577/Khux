@@ -1,2 +1,24 @@
 @import './tailwind.css';
 @import './theme.css';
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* 스크롤바 스타일 */
+html::-webkit-scrollbar {
+  width: 6px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 3px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.5);
+}
