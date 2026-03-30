@@ -222,7 +222,7 @@ export function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorP
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             placeholder={placeholder || "마크다운으로 작성하세요... 이미지는 드래그 & 드롭 또는 붙여넣기로 추가할 수 있습니다."}
-            className="w-full min-h-[400px] px-4 py-3 bg-background focus:outline-none resize-y font-mono text-sm leading-relaxed"
+            className="w-full min-h-[400px] px-4 py-3 bg-background text-foreground focus:outline-none resize-y font-mono text-sm leading-relaxed"
           />
           {uploading && (
             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
@@ -248,7 +248,7 @@ export function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorP
 
 export function MarkdownRenderer({ content }: { content: string }) {
   return (
-    <div className="prose prose-lg max-w-none dark:prose-invert
+    <div className="prose prose-lg max-w-none prose-invert
       prose-headings:font-bold prose-headings:tracking-tight
       prose-h1:text-3xl prose-h1:mt-8 prose-h1:mb-4
       prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-3
