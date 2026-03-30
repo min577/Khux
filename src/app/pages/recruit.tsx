@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, Send, Calendar, Clock, FileText } from "lucide-react";
-import { apiFetch } from "../../utils/supabase-client";
+import { apiFetch, supabase } from "../../utils/supabase-client";
+import { DEFAULT_RECRUIT_CONFIG, KV_KEY, formatDate } from "../types/recruit-config";
+import type { RecruitConfig } from "../types/recruit-config";
 
 interface ApplicationForm {
   name: string;
@@ -27,9 +29,21 @@ const initialForm: ApplicationForm = {
 };
 
 export function Recruit() {
+  const [config, setConfig] = useState<RecruitConfig>(DEFAULT_RECRUIT_CONFIG);
   const [form, setForm] = useState<ApplicationForm>(initialForm);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("kv_store_d0140d55")
+      .select("value")
+      .eq("key", KV_KEY)
+      .single()
+      .then(({ data }) => {
+        if (data?.value) setConfig({ ...DEFAULT_RECRUIT_CONFIG, ...data.value });
+      });
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -85,7 +99,7 @@ export function Recruit() {
           <div className="mb-12">
             <h1 className="text-4xl sm:text-5xl mb-4">Recruit</h1>
             <p className="text-lg text-muted-foreground">
-              KHUX 4기 멤버를 모집합니다. UX/UI에 관심 있는 경희대학교 학생이라면 누구나 지원 가능합니다.
+              {config.generation} 멤버를 모집합니다. UX/UI에 관심 있는 경희대학교 학생이라면 누구나 지원 가능합니다.
             </p>
           </div>
 
@@ -96,21 +110,21 @@ export function Recruit() {
                 <Calendar className="h-5 w-5 text-primary" />
                 <h3 className="font-medium">지원 기간</h3>
               </div>
-              <p className="text-sm text-muted-foreground">2026.03.14 ~ 2026.05.05</p>
+              <p className="text-sm text-muted-foreground">{formatDate(config.applicationStart)} ~ {formatDate(config.applicationEnd)}</p>
             </div>
             <div className="p-6 bg-card border border-border rounded-xl">
               <div className="flex items-center gap-3 mb-3">
                 <Clock className="h-5 w-5 text-primary" />
                 <h3 className="font-medium">면접 일정</h3>
               </div>
-              <p className="text-sm text-muted-foreground">2026.05.08 ~ 2026.05.12</p>
+              <p className="text-sm text-muted-foreground">{formatDate(config.interviewStart)} ~ {formatDate(config.interviewEnd)}</p>
             </div>
             <div className="p-6 bg-card border border-border rounded-xl">
               <div className="flex items-center gap-3 mb-3">
                 <FileText className="h-5 w-5 text-primary" />
                 <h3 className="font-medium">결과 발표</h3>
               </div>
-              <p className="text-sm text-muted-foreground">2026.05.15</p>
+              <p className="text-sm text-muted-foreground">{formatDate(config.resultDate)}</p>
             </div>
           </div>
 
@@ -135,6 +149,11 @@ export function Recruit() {
           {/* Application Form */}
           <div className="bg-card border border-border rounded-2xl p-8">
             <h2 className="text-2xl mb-8">지원서 작성</h2>
+            {!config.isOpen ? (
+              <div className="text-center py-12 text-muted-foreground">
+                현재 모집 기간이 아닙니다. 다음 모집 공고를 기다려주세요.
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,48 +236,34 @@ export function Recruit() {
               </div>
 
               {/* Long-form Questions */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  지원 동기 *
-                </label>
-                <textarea
-                  name="motivation"
-                  value={form.motivation}
-                  onChange={handleChange}
-                  required
-                  rows={5}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                  placeholder="KHUX에 지원하게 된 동기와 학회에서 이루고 싶은 목표를 자유롭게 작성해주세요."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  관련 경험
-                </label>
-                <textarea
-                  name="experience"
-                  value={form.experience}
-                  onChange={handleChange}
-                  rows={4}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                  placeholder="UX/UI 관련 경험이나 프로젝트가 있다면 작성해주세요. (선택)"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  포트폴리오 링크
-                </label>
-                <input
-                  type="url"
-                  name="portfolio"
-                  value={form.portfolio}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="https://... (선택)"
-                />
-              </div>
+              {config.questions.filter((q) => q.visible).map((q) => (
+                <div key={q.id}>
+                  <label className="block text-sm font-medium mb-2">
+                    {q.label}{q.required ? " *" : ""}
+                  </label>
+                  {q.type === "textarea" ? (
+                    <textarea
+                      name={q.id}
+                      value={form[q.id]}
+                      onChange={handleChange}
+                      required={q.required}
+                      rows={q.rows ?? 4}
+                      className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                      placeholder={q.placeholder}
+                    />
+                  ) : (
+                    <input
+                      type="url"
+                      name={q.id}
+                      value={form[q.id]}
+                      onChange={handleChange}
+                      required={q.required}
+                      className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder={q.placeholder}
+                    />
+                  )}
+                </div>
+              ))}
 
               {/* Submit */}
               <button
@@ -276,6 +281,7 @@ export function Recruit() {
                 )}
               </button>
             </form>
+            )}
           </div>
         </div>
       </div>

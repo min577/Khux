@@ -12,13 +12,15 @@ import {
   Loader2,
   X,
   Image as ImageIcon,
-  Calendar
+  Calendar,
+  UserPlus,
 } from "lucide-react";
 import { supabase, apiFetch, apiFetchAuth, uploadImage } from "../../utils/supabase-client";
 import type { Article, NewsItem, GalleryItem, Activity } from "../data/mock-data";
 import { MarkdownEditor } from "../components/markdown-editor";
+import { AdminRecruitTab } from "./admin-recruit";
 
-type TabType = "articles" | "news" | "gallery" | "activities";
+type TabType = "articles" | "news" | "gallery" | "activities" | "recruit";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -691,6 +693,7 @@ export function AdminDashboard() {
                 { key: "news" as TabType, icon: NewspaperIcon, label: "뉴스 관리" },
                 { key: "gallery" as TabType, icon: ImageIcon, label: "갤러리 관리" },
                 { key: "activities" as TabType, icon: Calendar, label: "액티비티 관리" },
+                { key: "recruit" as TabType, icon: UserPlus, label: "리크루팅 설정" },
               ]).map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
@@ -715,7 +718,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Search and Add */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {activeTab !== "recruit" && <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
@@ -730,7 +733,7 @@ export function AdminDashboard() {
             <PlusCircle className="h-5 w-5" />
             {getAddButtonLabel()}
           </button>
-        </div>
+        </div>}
 
         {/* Content List */}
         {activeTab === "articles" && (
@@ -780,6 +783,8 @@ export function AdminDashboard() {
             )}
           </div>
         )}
+
+        {activeTab === "recruit" && <AdminRecruitTab />}
       </div>
 
       {/* Add/Edit Modal */}
