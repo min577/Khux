@@ -14,10 +14,8 @@ export function Layout() {
     { id: "articles", label: "Articles" },
     { id: "activities", label: "Activities" },
     { id: "gallery", label: "Gallery" },
-    { id: "news", label: "News" },
   ];
 
-  // Track active section on scroll (only on home page)
   useEffect(() => {
     if (!isHome) return;
 
@@ -40,7 +38,6 @@ export function Layout() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isHome]);
 
-  // Scroll to top on non-home route change
   useEffect(() => {
     if (!isHome) {
       window.scrollTo(0, 0);
@@ -71,18 +68,15 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border">
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
             <button onClick={scrollToTop} className="flex items-center">
               <span className="text-lg font-extrabold tracking-tight" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-0.03em' }}>
                 KH<span className="text-primary">UX</span>
               </span>
             </button>
 
-            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
               {scrollNavItems.map((item) => (
                 <button
@@ -98,6 +92,16 @@ export function Layout() {
                 </button>
               ))}
               <Link
+                to="/notice"
+                className={`text-sm font-medium transition-colors ${
+                  location.pathname === "/notice"
+                    ? "text-foreground"
+                    : "text-text-sub hover:text-foreground"
+                }`}
+              >
+                Notice
+              </Link>
+              <Link
                 to="/recruit"
                 className={`text-sm font-medium transition-colors ${
                   location.pathname === "/recruit"
@@ -109,7 +113,6 @@ export function Layout() {
               </Link>
             </nav>
 
-            {/* Mobile menu button */}
             <button
               className="md:hidden p-2"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -123,7 +126,6 @@ export function Layout() {
             </button>
           </div>
 
-          {/* Mobile Navigation */}
           {mobileMenuOpen && (
             <nav className="md:hidden py-4 space-y-1">
               {scrollNavItems.map((item) => (
@@ -140,6 +142,17 @@ export function Layout() {
                 </button>
               ))}
               <Link
+                to="/notice"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm ${
+                  location.pathname === "/notice"
+                    ? "text-foreground bg-surface2"
+                    : "text-text-sub hover:text-foreground hover:bg-surface2"
+                }`}
+              >
+                Notice
+              </Link>
+              <Link
                 to="/recruit"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm ${
@@ -155,12 +168,10 @@ export function Layout() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 pt-16">
         <Outlet />
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border">
         <div className="container mx-auto px-6 sm:px-8 lg:px-12 py-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">

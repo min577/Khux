@@ -6,6 +6,7 @@ import { AdminLogin } from "./pages/admin-login";
 import { AdminDashboard } from "./pages/admin-dashboard";
 import { Layout } from "./components/layout";
 import { NotFound } from "./pages/not-found";
+import { Notice } from "./pages/notice";
 
 export const router = createBrowserRouter([
   {
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: "recruit", Component: Recruit },
+      { path: "notice", Component: Notice },
       { path: "articles/:id", Component: ArticleDetail },
       { path: "*", Component: NotFound },
     ],
