@@ -7,14 +7,6 @@ import type { RecruitConfig, RecruitQuestion, RecruitBasicField } from "../types
 const INPUT_CLASS =
   "w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm";
 
-const BASIC_FIELD_PLACEHOLDERS: Record<RecruitBasicField["id"], string> = {
-  name: "홍길동",
-  studentId: "2024XXXXXX",
-  major: "산업디자인학과",
-  phone: "010-0000-0000",
-  email: "example@khu.ac.kr",
-  team: "Leaders / Education / Operations / Growth",
-};
 
 export function AdminRecruitTab() {
   const [config, setConfig] = useState<RecruitConfig>(DEFAULT_RECRUIT_CONFIG);
@@ -177,11 +169,16 @@ export function AdminRecruitTab() {
         <div className="space-y-2">
           {config.basicFields.map((f) => (
             <div key={f.id} className={`flex items-center gap-3 px-4 py-3 bg-card border rounded-lg transition-opacity ${f.visible ? "border-border" : "border-border/40 opacity-50"}`}>
-              <div className="flex-1">
+              <div className="flex-1 space-y-1">
                 <input type="text" value={f.label}
                   onChange={(e) => updateBasicField(f.id, "label", e.target.value)}
                   className="text-sm font-medium bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-none pb-0.5 w-full" />
-                <p className="text-xs text-muted-foreground mt-0.5">{BASIC_FIELD_PLACEHOLDERS[f.id]}</p>
+                {f.id !== "team" && (
+                  <input type="text" value={f.placeholder}
+                    onChange={(e) => updateBasicField(f.id, "placeholder", e.target.value)}
+                    className="text-xs text-muted-foreground bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-none pb-0.5 w-full"
+                    placeholder="예시 텍스트" />
+                )}
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">

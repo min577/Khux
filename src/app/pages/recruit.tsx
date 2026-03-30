@@ -15,14 +15,6 @@ const BASIC_FIELD_INPUT_TYPE: Record<string, string> = {
   team: "select",
 };
 
-const BASIC_FIELD_PLACEHOLDER: Record<string, string> = {
-  name: "홍길동",
-  studentId: "2024XXXXXX",
-  major: "산업디자인학과",
-  phone: "010-0000-0000",
-  email: "example@khu.ac.kr",
-  team: "",
-};
 
 export function Recruit() {
   const [config, setConfig] = useState<RecruitConfig>(DEFAULT_RECRUIT_CONFIG);
@@ -183,7 +175,7 @@ export function Recruit() {
                           onChange={handleChange}
                           required={f.required}
                           className={INPUT_CLASS}
-                          placeholder={BASIC_FIELD_PLACEHOLDER[f.id]}
+                          placeholder={f.placeholder}
                         />
                       )}
                     </div>
