@@ -651,6 +651,35 @@ app.delete("/make-server-d0140d55/applications/:id", async (c) => {
   }
 });
 
+// ============ Recruit Config ============
+
+// Get recruit config (public)
+app.get("/make-server-d0140d55/recruit-config", async (c) => {
+  try {
+    const config = await kv.get("recruit:config");
+    return c.json({ config: config ?? null });
+  } catch (error) {
+    console.log(`Error fetching recruit config: ${error}`);
+    return c.json({ error: "Failed to fetch recruit config" }, 500);
+  }
+});
+
+// Update recruit config (protected)
+app.put("/make-server-d0140d55/recruit-config", async (c) => {
+  try {
+    const accessToken = c.req.header('x-user-token');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
+
+    const config = await c.req.json();
+    await kv.set("recruit:config", config);
+    return c.json({ config });
+  } catch (error) {
+    console.log(`Error updating recruit config: ${error}`);
+    return c.json({ error: "Failed to update recruit config" }, 500);
+  }
+});
+
 // ============ Initialize Sample Data ============
 // This endpoint populates the database with sample data (one-time use)
 app.post("/make-server-d0140d55/init-sample-data", async (c) => {

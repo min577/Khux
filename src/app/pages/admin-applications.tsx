@@ -11,7 +11,9 @@ import {
   User,
   Trash2,
 } from "lucide-react";
-import { supabase, apiFetchAuth } from "../../utils/supabase-client";
+import { supabase, apiFetch, apiFetchAuth } from "../../utils/supabase-client";
+import { DEFAULT_RECRUIT_CONFIG } from "../types/recruit-config";
+import type { RecruitQuestion } from "../types/recruit-config";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,11 +27,9 @@ interface Application {
   phone: string;
   email: string;
   team: string;
-  motivation: string;
-  experience?: string;
-  portfolio?: string;
   status: Status;
   submittedAt: string;
+  [key: string]: unknown;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ export function AdminApplications() {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [questions, setQuestions] = useState<RecruitQuestion[]>(DEFAULT_RECRUIT_CONFIG.questions);
 
   // ── Auth check ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -84,6 +85,9 @@ export function AdminApplications() {
       fetchApplications();
     };
     check();
+    apiFetch("/recruit-config").then(r => r.json()).then(({ config }) => {
+      if (config?.questions) setQuestions(config.questions);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!s) navigate("/admin/login");
@@ -330,6 +334,7 @@ export function AdminApplications() {
           {selected ? (
             <DetailPanel
               app={applications.find(a => a.id === selected.id) ?? selected}
+              questions={questions}
               onStatusChange={updateStatus}
               onDelete={deleteApplication}
               updating={updating}
@@ -389,11 +394,13 @@ function ActionBtn({
 
 function DetailPanel({
   app,
+  questions,
   onStatusChange,
   onDelete,
   updating,
 }: {
   app: Application;
+  questions: RecruitQuestion[];
   onStatusChange: (id: string, status: Status) => void;
   onDelete: (id: string) => void;
   updating: boolean;
@@ -447,34 +454,32 @@ function DetailPanel({
       {/* Divider */}
       <div className="h-px bg-border mb-8" />
 
-      {/* Q&A */}
+      {/* Q&A — dynamic from recruit config questions */}
       <div className="space-y-6">
-        <QABlock
-          q="지원 동기"
-          a={app.motivation}
-        />
-        {app.experience && (
-          <QABlock
-            q="관련 경험"
-            a={app.experience}
-          />
-        )}
-        {app.portfolio && (
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              포트폴리오
-            </p>
-            <a
-              href={app.portfolio}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              {app.portfolio}
-            </a>
-          </div>
-        )}
+        {questions.map((q) => {
+          const answer = app[q.id];
+          if (!answer) return null;
+          const text = String(answer);
+          if (q.type === "url") {
+            return (
+              <div key={q.id}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {q.label}
+                </p>
+                <a
+                  href={text}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {text}
+                </a>
+              </div>
+            );
+          }
+          return <QABlock key={q.id} q={q.label} a={text} />;
+        })}
       </div>
 
       {/* Divider */}
