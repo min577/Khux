@@ -69,7 +69,7 @@ export function ArticleDetail() {
         <div className="max-w-4xl mx-auto">
           {/* Back Button */}
           <Link
-            to="/articles"
+            to="/#articles"
             className="inline-flex items-center text-muted-foreground hover:text-foreground mb-8 transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
