@@ -98,12 +98,14 @@ export function Home() {
     { name: "Ops", eng: "Operations Team", icon: "⚙️", color: "lime", desc: "학회의 전체 운영을 책임집니다. 일정 관리, 예산 운용, 팀 간 조율, 행사 기획까지 KHUX가 원활하게 돌아갈 수 있도록 뒷받침하는 팀입니다.", tags: ["일정 관리", "예산 운용", "행사 기획", "팀 조율"] },
     { name: "Brand", eng: "Brand Experience Team", icon: "✦", color: "orange", desc: "KHUX의 브랜드 정체성과 외부 커뮤니케이션을 담당합니다. SNS 콘텐츠, 디자인 에셋, 학회 웹사이트 등 시각적 경험 전반을 설계합니다.", tags: ["SNS 운영", "디자인 에셋", "웹사이트", "비주얼 아이덴티티"] },
     { name: "Education", eng: "Education & Research Team", icon: "📚", color: "blue", desc: "구성원의 성장을 이끄는 학습·연구 팀입니다. UX 방법론, AI 기술, 케이스 스터디를 체계적인 커리큘럼으로 운영합니다.", tags: ["커리큘럼 설계", "스터디 운영", "세미나 기획", "프로젝트 피드백"] },
+    { name: "PR", eng: "Public Relations Team", icon: "📢", color: "purple", desc: "KHUX의 대외 활동과 네트워킹을 담당합니다. 외부 행사 참여, 기업 연계, 네트워킹 이벤트를 기획하며 학회의 외부 영향력을 확장합니다.", tags: ["대외 활동", "네트워킹 행사", "기업 연계", "외부 홍보"] },
   ];
 
   const teamColorMap: Record<string, { bar: string; badge: string; glow: string }> = {
     lime: { bar: "bg-primary", badge: "text-primary", glow: "bg-primary/[0.07] group-hover:bg-primary/[0.12]" },
     orange: { bar: "bg-deep-orange", badge: "text-deep-orange", glow: "bg-deep-orange/[0.07] group-hover:bg-deep-orange/[0.12]" },
     blue: { bar: "bg-deep-blue", badge: "text-deep-blue", glow: "bg-deep-blue/[0.07] group-hover:bg-deep-blue/[0.12]" },
+    purple: { bar: "bg-[#a855f7]", badge: "text-[#a855f7]", glow: "bg-[#a855f7]/[0.07] group-hover:bg-[#a855f7]/[0.12]" },
   };
 
   const activityItems = [
@@ -262,13 +264,13 @@ export function Home() {
               <h2 className="text-3xl sm:text-4xl lg:text-5xl">팀 소개</h2>
             </div>
             <p className="text-[15px] text-text-sub leading-relaxed max-w-md">
-              KHUX는 세 개의 팀이 각자의 전문성으로 협력하며
+              KHUX는 네 개의 팀이 각자의 전문성으로 협력하며
               하나의 완성된 UX 학회를 만들어 나갑니다.
             </p>
           </div>
         </FadeInSection>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {teamCards.map((team, i) => {
             const colors = teamColorMap[team.color];
             return (
