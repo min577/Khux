@@ -105,17 +105,6 @@ export function ArticleDetail() {
             </div>
           </div>
 
-          {/* Featured Image */}
-          {article.imageUrl && (
-            <div className="relative h-64 sm:h-96 mb-12 rounded-lg overflow-hidden bg-muted">
-              <ImageWithFallback
-                src={article.imageUrl}
-                alt={article.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
           {/* Article Content */}
           <MarkdownRenderer content={article.content} />
 

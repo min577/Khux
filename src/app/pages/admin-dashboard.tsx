@@ -942,7 +942,7 @@ export function AdminDashboard() {
               {/* Image Upload (shared) */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  이미지 첨부 {activeTab === "gallery" ? "*" : "(선택)"}
+                  {activeTab === "gallery" ? "이미지 첨부 *" : "썸네일 첨부 (선택)"}
                 </label>
                 <input type="file" accept="image/*" onChange={handleImageChange}
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
