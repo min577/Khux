@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { LogOut, ArrowLeft, Users, Crown } from "lucide-react";
+import { LogOut, ArrowLeft, Users, Crown, ChevronRight } from "lucide-react";
 import { useReviewUser, reviewApiFetch } from "../../utils/review-auth";
 import { MemberCard } from "../components/review/member-card";
 import { ReviewProgress } from "../components/review/review-progress";
@@ -27,6 +27,7 @@ interface MyReview {
 export function ReviewDashboard() {
   const navigate = useNavigate();
   const { user, loading: authLoading, logout } = useReviewUser();
+  const [mySessions, setMySessions] = useState<ReviewSession[]>([]);
   const [session, setSession] = useState<ReviewSession | null>(null);
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
   const [myLeaderReviews, setMyLeaderReviews] = useState<MyReview[]>([]);
@@ -39,41 +40,53 @@ export function ReviewDashboard() {
     }
   }, [user, authLoading, navigate]);
 
+  // Fetch sessions list
   useEffect(() => {
     if (!user) return;
 
-    async function fetchData() {
+    async function fetchSessions() {
       try {
-        // Find active session for user's team
         const sessionsRes = await reviewApiFetch("/review/sessions?active=true");
         if (!sessionsRes.ok) throw new Error("Failed to fetch sessions");
         const { sessions } = await sessionsRes.json();
 
-        const mySession = sessions.find((s: ReviewSession) => s.team === user!.team);
-        if (!mySession) {
-          setSession(null);
-          setLoading(false);
-          return;
-        }
-        setSession(mySession);
+        const mine = sessions.filter((s: ReviewSession) => s.team === user!.team);
+        setMySessions(mine);
 
-        // Fetch my reviews
-        const reviewsRes = await reviewApiFetch(`/review/sessions/${mySession.id}/my-reviews`);
-        if (reviewsRes.ok) {
-          const data = await reviewsRes.json();
-          setMyReviews(data.reviews || []);
-          setMyLeaderReviews(data.leader_reviews || []);
+        // Auto-select if only one
+        if (mine.length === 1) {
+          selectSession(mine[0]);
+        } else if (mine.length === 0) {
+          setLoading(false);
+        } else {
+          setLoading(false);
         }
       } catch (err) {
         console.error(err);
         setError("데이터를 불러오는데 실패했습니다.");
-      } finally {
         setLoading(false);
       }
     }
 
-    fetchData();
+    fetchSessions();
   }, [user]);
+
+  async function selectSession(sess: ReviewSession) {
+    setSession(sess);
+    setLoading(true);
+    try {
+      const reviewsRes = await reviewApiFetch(`/review/sessions/${sess.id}/my-reviews`);
+      if (reviewsRes.ok) {
+        const data = await reviewsRes.json();
+        setMyReviews(data.reviews || []);
+        setMyLeaderReviews(data.leader_reviews || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (authLoading || loading) {
     return (
@@ -131,16 +144,50 @@ export function ReviewDashboard() {
           </div>
         )}
 
-        {!session ? (
+        {/* Session selector when multiple sessions exist */}
+        {!session && mySessions.length > 1 && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">진행 중인 피어리뷰를 선택하세요.</p>
+            {mySessions.map((sess) => (
+              <button
+                key={sess.id}
+                onClick={() => selectSession(sess)}
+                className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-accent/50 transition-all text-left"
+              >
+                <div>
+                  <p className="font-medium">{sess.title}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{sess.team_name} — {sess.members?.length || 0}명</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!session && mySessions.length === 0 && (
           <div className="text-center py-16">
             <p className="text-muted-foreground">현재 진행 중인 피어리뷰가 없습니다.</p>
           </div>
-        ) : (
+        )}
+
+        {session && (
           <>
             {/* Session Title */}
             <div className="bg-card border border-border rounded-xl p-6">
-              <h1 className="text-xl font-bold">{session.title}</h1>
-              <p className="text-sm text-muted-foreground mt-1">{session.team_name} 팀</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold">{session.title}</h1>
+                  <p className="text-sm text-muted-foreground mt-1">{session.team_name} 팀</p>
+                </div>
+                {mySessions.length > 1 && (
+                  <button
+                    onClick={() => { setSession(null); setMyReviews([]); setMyLeaderReviews([]); }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    다른 리뷰 선택
+                  </button>
+                )}
+              </div>
 
               <div className="mt-4 space-y-3">
                 <ReviewProgress
