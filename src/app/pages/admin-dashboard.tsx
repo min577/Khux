@@ -1029,7 +1029,7 @@ export function AdminDashboard() {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <div className="grid grid-cols-[1fr,80px,80px,60px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b border-border">
+                          <div className="grid grid-cols-[1fr,120px,120px,80px] gap-4 text-xs text-muted-foreground font-medium pb-2 border-b border-border">
                             <span>이름</span>
                             <span className="text-center">공통 리뷰</span>
                             <span className="text-center">리더 평가</span>
@@ -1038,7 +1038,7 @@ export function AdminDashboard() {
                           {reviewStatusData.map((member: any) => (
                             <div
                               key={member.discord_id}
-                              className="grid grid-cols-[1fr,80px,80px,60px] gap-2 items-center text-sm py-1.5"
+                              className="grid grid-cols-[1fr,120px,120px,80px] gap-4 items-center text-sm py-1.5"
                             >
                               <div className="flex items-center gap-2">
                                 <span>{member.display_name}</span>
