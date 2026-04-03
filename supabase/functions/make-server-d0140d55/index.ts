@@ -963,7 +963,8 @@ app.post("/make-server-d0140d55/review/sessions", async (c) => {
 
     const now = new Date();
     const month = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const sessionId = `${team}_${month}`;
+    const ts = now.getTime().toString(36);
+    const sessionId = `${team}_${month}_${ts}`;
 
     const sessionData = {
       id: sessionId,
@@ -1424,7 +1425,8 @@ app.post("/make-server-d0140d55/review/sessions/start-all", async (c) => {
 
       if (teamMembers.length === 0) continue;
 
-      const sessionId = `${teamKey}_${month}`;
+      const ts = now.getTime().toString(36);
+      const sessionId = `${teamKey}_${month}_${ts}`;
       const sessionData = {
         id: sessionId,
         title,
