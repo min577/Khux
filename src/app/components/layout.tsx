@@ -107,6 +107,12 @@ export function Layout() {
               >
                 Recruit
               </Link>
+              <Link
+                to="/review/login"
+                className="text-sm font-medium px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Peer Review
+              </Link>
             </nav>
 
             {/* Mobile menu button */}
@@ -149,6 +155,13 @@ export function Layout() {
                 }`}
               >
                 Recruit
+              </Link>
+              <Link
+                to="/review/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm font-medium text-primary hover:bg-surface2"
+              >
+                Peer Review
               </Link>
             </nav>
           )}
