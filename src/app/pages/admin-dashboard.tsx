@@ -964,101 +964,116 @@ export function AdminDashboard() {
             ) : (
               reviewSessions.map((sess) => (
                 <div key={sess.id} className="bg-card border border-border rounded-xl overflow-hidden">
-                  <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{sess.title}</h3>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                          sess.active ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
-                        }`}>
-                          {sess.active ? "진행 중" : "종료"}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {sess.team_name} — {sess.members?.length || 0}명 — {new Date(sess.started_at).toLocaleDateString("ko-KR")}
-                      </p>
+                  {/* Session header */}
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-lg">{sess.title}</h3>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                        sess.active ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {sess.active ? "진행 중" : "종료"}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <p className="text-sm text-muted-foreground">
+                      {sess.team_name} — {sess.members?.length || 0}명 — {new Date(sess.started_at).toLocaleDateString("ko-KR")}
+                    </p>
+
+                    {/* Action buttons - text labels */}
+                    <div className="flex flex-wrap items-center gap-2 mt-4">
                       <button
                         onClick={() => fetchReviewStatus(sess.id)}
-                        className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-accent transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
                       >
+                        <RefreshCw className="w-3.5 h-3.5" />
                         현황 보기
                       </button>
                       <button
                         onClick={() => sendReviewReminder(sess.id)}
-                        className="p-1.5 text-blue-500 hover:text-blue-600 transition-colors"
-                        title="미완료자 확인"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                       >
-                        <Bell className="w-4 h-4" />
+                        <Bell className="w-3.5 h-3.5" />
+                        리마인드 발송
                       </button>
                       <button
                         onClick={() => exportReviewCsv(sess.id, "common")}
-                        className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                        title="공통 리뷰 CSV"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-3.5 h-3.5" />
+                        공통 리뷰 CSV
                       </button>
                       <button
                         onClick={() => exportReviewCsv(sess.id, "leader")}
-                        className="p-1.5 text-amber-500 hover:text-amber-600 transition-colors"
-                        title="리더 평가 CSV"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-3.5 h-3.5" />
+                        리더 평가 CSV
                       </button>
                       {sess.active && (
                         <button
                           onClick={() => endReviewSession(sess.id)}
-                          className="p-1.5 text-destructive hover:text-destructive/80 transition-colors"
-                          title="세션 종료"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-destructive/30 text-destructive bg-destructive/5 rounded-lg hover:bg-destructive/10 transition-colors"
                         >
-                          <StopCircle className="w-4 h-4" />
+                          <StopCircle className="w-3.5 h-3.5" />
+                          세션 종료
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Status detail */}
+                  {/* Status detail table */}
                   {selectedReviewSession === sess.id && (
-                    <div className="border-t border-border p-5">
+                    <div className="border-t border-border">
                       {reviewStatusLoading ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground p-5">
                           <Loader2 className="w-4 h-4 animate-spin" /> 불러오는 중...
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-[1fr,120px,120px,80px] gap-4 text-xs text-muted-foreground font-medium pb-2 border-b border-border">
-                            <span>이름</span>
-                            <span className="text-center">공통 리뷰</span>
-                            <span className="text-center">리더 평가</span>
-                            <span className="text-center">상태</span>
-                          </div>
-                          {reviewStatusData.map((member: any) => (
-                            <div
-                              key={member.discord_id}
-                              className="grid grid-cols-[1fr,120px,120px,80px] gap-4 items-center text-sm py-1.5"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span>{member.display_name}</span>
-                                {member.is_leader && (
-                                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">Leader</span>
-                                )}
-                              </div>
-                              <span className="text-center text-muted-foreground">
-                                {member.common_done}/{member.common_total}
-                              </span>
-                              <span className="text-center text-muted-foreground">
-                                {member.leader_done}/{member.leader_total}
-                              </span>
-                              <div className="flex justify-center">
-                                {member.complete ? (
-                                  <Check className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <X className="w-4 h-4 text-destructive" />
-                                )}
-                              </div>
-                            </div>
-                          ))}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-border text-xs text-muted-foreground">
+                                <th className="text-left font-medium px-5 py-3 min-w-[200px]">이름</th>
+                                <th className="text-center font-medium px-4 py-3 min-w-[100px]">공통 리뷰</th>
+                                <th className="text-center font-medium px-4 py-3 min-w-[100px]">리더 평가</th>
+                                <th className="text-center font-medium px-4 py-3 min-w-[80px]">상태</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reviewStatusData.map((member: any) => (
+                                <tr key={member.discord_id} className="border-b border-border/50 last:border-0">
+                                  <td className="px-5 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{member.display_name}</span>
+                                      {member.is_leader && (
+                                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">Leader</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="text-center px-4 py-3">
+                                    <span className={member.common_done >= member.common_total ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                                      {member.common_done}/{member.common_total}
+                                    </span>
+                                  </td>
+                                  <td className="text-center px-4 py-3">
+                                    <span className={member.leader_done >= member.leader_total ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                                      {member.leader_done}/{member.leader_total}
+                                    </span>
+                                  </td>
+                                  <td className="text-center px-4 py-3">
+                                    {member.complete ? (
+                                      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                        <Check className="w-3 h-3" /> 완료
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
+                                        <X className="w-3 h-3" /> 미완료
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       )}
                     </div>
