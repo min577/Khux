@@ -113,7 +113,7 @@ export function ReviewDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -137,7 +137,7 @@ export function ReviewDashboard() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-6 lg:px-8 py-8 space-y-8">
         {error && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <p className="text-sm text-destructive">{error}</p>
@@ -173,11 +173,11 @@ export function ReviewDashboard() {
         {session && (
           <>
             {/* Session Title */}
-            <div className="bg-card border border-border rounded-xl p-6">
+            <div className="bg-card border border-border rounded-xl p-6 lg:p-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-bold">{session.title}</h1>
-                  <p className="text-sm text-muted-foreground mt-1">{session.team_name} 팀</p>
+                  <h1 className="text-2xl font-bold">{session.title}</h1>
+                  <p className="text-muted-foreground mt-1">{session.team_name} 팀</p>
                 </div>
                 {mySessions.length > 1 && (
                   <button
