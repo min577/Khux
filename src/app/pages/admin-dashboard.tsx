@@ -169,20 +169,24 @@ export function AdminDashboard() {
     }
   };
 
-  const endReviewSession = async (sessionId: string) => {
-    if (!confirm("이 세션을 종료하시겠습니까?")) return;
+  const endReviewGroup = async (title: string) => {
+    if (!confirm(`"${title}" 피어리뷰를 종료하시겠습니까? 모든 팀의 세션이 종료됩니다.`)) return;
     try {
-      const res = await apiFetchAuth(`/review/sessions/${sessionId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: false }),
-      });
-      if (res.ok) {
-        setReviewMessage({ type: "success", text: "세션이 종료되었습니다." });
-        fetchReviewSessions();
-      }
+      const sessionsToEnd = reviewSessions.filter((s) => s.title === title && s.active);
+      await Promise.all(
+        sessionsToEnd.map((s) =>
+          apiFetchAuth(`/review/sessions/${s.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ active: false }),
+          })
+        )
+      );
+      setReviewMessage({ type: "success", text: `"${title}" 피어리뷰가 종료되었습니다.` });
+      fetchReviewSessions();
     } catch (err) {
       console.error(err);
+      setReviewMessage({ type: "error", text: "종료에 실패했습니다." });
     }
   };
 
@@ -982,12 +986,15 @@ export function AdminDashboard() {
 
                 return Object.entries(groups).map(([key, group]) => (
                   <div key={key} className="bg-card border border-border rounded-xl overflow-hidden">
-                    {/* Group header (clickable) */}
-                    <button
-                      onClick={() => setExpandedReviewGroup(expandedReviewGroup === key ? null : key)}
-                      className="w-full p-5 flex items-center justify-between hover:bg-accent/30 transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-3">
+                    {/* Group header */}
+                    <div className="p-5 flex items-center justify-between">
+                      <button
+                        onClick={() => setExpandedReviewGroup(expandedReviewGroup === key ? null : key)}
+                        className="flex items-center gap-3 hover:opacity-70 transition-opacity"
+                      >
+                        <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expandedReviewGroup === key ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                         <h3 className="font-semibold text-lg">{group.title}</h3>
                         <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
                           group.active ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
@@ -997,11 +1004,17 @@ export function AdminDashboard() {
                         <span className="text-sm text-muted-foreground">
                           {group.sessions.length}개 팀
                         </span>
-                      </div>
-                      <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expandedReviewGroup === key ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                      </button>
+                      {group.active && (
+                        <button
+                          onClick={() => endReviewGroup(group.title)}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-destructive/30 text-destructive bg-destructive/5 rounded-lg hover:bg-destructive/10 transition-colors"
+                        >
+                          <StopCircle className="w-3.5 h-3.5" />
+                          피어리뷰 종료
+                        </button>
+                      )}
+                    </div>
 
                     {/* Expanded team list */}
                     {expandedReviewGroup === key && (
@@ -1055,15 +1068,7 @@ export function AdminDashboard() {
                                     <Download className="w-3.5 h-3.5" />
                                     리더 평가 CSV
                                   </button>
-                                  {sess.active && (
-                                    <button
-                                      onClick={() => endReviewSession(sess.id)}
-                                      className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-destructive/30 text-destructive bg-destructive/5 rounded-lg hover:bg-destructive/10 transition-colors"
-                                    >
-                                      <StopCircle className="w-3.5 h-3.5" />
-                                      세션 종료
-                                    </button>
-                                  )}
+                                  {/* 세션 종료는 그룹 레벨에서 처리 */}
                                 </div>
 
                                 {/* Status table */}
