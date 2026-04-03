@@ -89,6 +89,10 @@ export function ReviewForm() {
       setError("모든 항목에 점수를 입력해주세요.");
       return;
     }
+    if (comment.length < 50) {
+      setError("코멘트를 50자 이상 작성해주세요.");
+      return;
+    }
 
     setSubmitting(true);
     setError("");
@@ -190,13 +194,18 @@ export function ReviewForm() {
 
         {/* Comment */}
         <div className="bg-card border border-border rounded-xl p-5">
-          <label className="block text-sm font-medium mb-2">코멘트 (선택사항)</label>
+          <label className="block text-sm font-medium mb-2">코멘트 (필수, 50자 이상)</label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="해당 팀원에 대한 피드백이나 의견을 자유롭게 작성해주세요."
-            className="w-full min-h-[120px] p-3 bg-background border border-border rounded-lg text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder="해당 팀원에 대한 피드백이나 의견을 자유롭게 작성해주세요. (50자 이상)"
+            className={`w-full min-h-[120px] p-3 bg-background border rounded-lg text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
+              comment.length > 0 && comment.length < 50 ? "border-destructive" : "border-border"
+            }`}
           />
+          <p className={`text-xs mt-1.5 ${comment.length >= 50 ? "text-green-600" : "text-muted-foreground"}`}>
+            {comment.length}/50자
+          </p>
         </div>
 
         {error && (
@@ -208,7 +217,7 @@ export function ReviewForm() {
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={submitting || !allScoresFilled}
+          disabled={submitting || !allScoresFilled || comment.length < 50}
           className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="w-4 h-4" />
