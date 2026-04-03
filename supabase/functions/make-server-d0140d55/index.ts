@@ -1263,6 +1263,114 @@ app.get("/make-server-d0140d55/review/bot/status/:team/:month", async (c) => {
   }
 });
 
+// ============ Admin: Send review reminders via Discord DM ============
+
+app.post("/make-server-d0140d55/review/sessions/:id/remind", async (c) => {
+  try {
+    const adminToken = c.req.header("x-user-token");
+    const { data: { user } } = await supabase.auth.getUser(adminToken);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const sessionId = c.req.param("id");
+    const session = await kv.get(`review_session:${sessionId}`);
+    if (!session) return c.json({ error: "Session not found" }, 404);
+
+    const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+    if (!botToken) return c.json({ error: "Bot token not configured" }, 500);
+
+    // Get submission status
+    const allReviews = await kv.getByPrefixWithKeys(`review:${sessionId}:`);
+    const allLeaderReviews = await kv.getByPrefixWithKeys(`leader_review:${sessionId}:`);
+    const members = session.members || [];
+    const leaders = members.filter((m: any) => m.is_leader);
+
+    const incomplete: { discord_id: string; display_name: string; missing: string[] }[] = [];
+
+    for (const member of members) {
+      const otherMembers = members.filter((m: any) => m.discord_id !== member.discord_id);
+      const otherLeaders = leaders.filter((l: any) => l.discord_id !== member.discord_id);
+
+      const commonDone = allReviews.filter((r: any) =>
+        r.key.startsWith(`review:${sessionId}:${member.discord_id}:`)
+      ).length;
+      const leaderDone = allLeaderReviews.filter((r: any) =>
+        r.key.startsWith(`leader_review:${sessionId}:${member.discord_id}:`)
+      ).length;
+
+      const missing: string[] = [];
+      if (commonDone < otherMembers.length) missing.push(`공통 피어리뷰 (${commonDone}/${otherMembers.length}명)`);
+      if (leaderDone < otherLeaders.length) missing.push(`리더 평가 (${leaderDone}/${otherLeaders.length}명)`);
+
+      if (missing.length > 0) {
+        incomplete.push({ discord_id: member.discord_id, display_name: member.display_name, missing });
+      }
+    }
+
+    if (incomplete.length === 0) {
+      return c.json({ success: true, message: "모든 팀원이 리뷰를 완료했습니다!", sent: 0 });
+    }
+
+    // Send DMs via Discord API
+    const sent: string[] = [];
+    const failed: string[] = [];
+
+    for (const member of incomplete) {
+      try {
+        // Create DM channel
+        const dmRes = await fetch("https://discord.com/api/v10/users/@me/channels", {
+          method: "POST",
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ recipient_id: member.discord_id }),
+        });
+
+        if (!dmRes.ok) {
+          failed.push(member.display_name);
+          continue;
+        }
+
+        const dmChannel = await dmRes.json();
+
+        // Send message
+        const msgRes = await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            embeds: [{
+              title: `KHUX 피어리뷰 리마인더`,
+              description: `**${session.team_name}** 팀 피어리뷰가 아직 완료되지 않았습니다.\n\n**미완료 항목:** ${member.missing.join(", ")}\n\n아래 링크에서 작성해주세요:\n**https://khux.vercel.app/review/login**`,
+              color: 0x5865F2,
+            }],
+          }),
+        });
+
+        if (msgRes.ok) {
+          sent.push(member.display_name);
+        } else {
+          failed.push(member.display_name);
+        }
+      } catch {
+        failed.push(member.display_name);
+      }
+    }
+
+    return c.json({
+      success: true,
+      message: `리마인더 전송 완료: ${sent.join(", ")} (${sent.length}명)${failed.length > 0 ? ` / 실패: ${failed.join(", ")}` : ""}`,
+      sent: sent.length,
+      failed: failed.length,
+    });
+  } catch (error) {
+    console.log(`Error sending reminders: ${error}`);
+    return c.json({ error: "Failed to send reminders" }, 500);
+  }
+});
+
 // ============ Admin: Start all team sessions ============
 
 // Fetch Discord guild members by role and create sessions for all teams

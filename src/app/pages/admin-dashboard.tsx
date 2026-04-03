@@ -202,21 +202,19 @@ export function AdminDashboard() {
 
   const sendReviewReminder = async (sessionId: string) => {
     setReviewMessage(null);
+    setReviewMessage({ type: "success", text: "리마인더 발송 중..." });
     try {
-      const res = await apiFetchAuth(`/review/sessions/${sessionId}/status`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const incomplete = (data.status || []).filter((m: any) => !m.complete);
-      if (incomplete.length === 0) {
-        setReviewMessage({ type: "success", text: "모든 팀원이 리뷰를 완료했습니다!" });
-        return;
-      }
-      setReviewMessage({
-        type: "success",
-        text: `미완료: ${incomplete.map((m: any) => m.display_name).join(", ")} (${incomplete.length}명) — 디스코드 봇 /웹리뷰알림 명령어로 DM을 발송하세요.`,
+      const res = await apiFetchAuth(`/review/sessions/${sessionId}/remind`, {
+        method: "POST",
       });
+      const data = await res.json();
+      if (res.ok) {
+        setReviewMessage({ type: "success", text: data.message });
+      } else {
+        setReviewMessage({ type: "error", text: data.error || "발송 실패" });
+      }
     } catch {
-      setReviewMessage({ type: "error", text: "현황 조회에 실패했습니다." });
+      setReviewMessage({ type: "error", text: "리마인더 발송에 실패했습니다." });
     }
   };
 
