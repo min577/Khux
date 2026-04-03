@@ -54,6 +54,8 @@ export function AdminDashboard() {
   const [newReviewTitle, setNewReviewTitle] = useState("");
   const [startingReview, setStartingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [expandedReviewGroup, setExpandedReviewGroup] = useState<string | null>(null);
+  const [expandedReviewTeam, setExpandedReviewTeam] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -906,41 +908,45 @@ export function AdminDashboard() {
         {/* Review Management Tab */}
         {activeTab === "review" && (
           <div className="space-y-6">
-            {/* Start Session */}
-            {!showStartForm ? (
-              <button
-                onClick={() => setShowStartForm(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
-              >
-                <Play className="w-4 h-4" />
-                새 피어리뷰 시작
-              </button>
-            ) : (
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h3 className="font-semibold">새 피어리뷰 세션 시작</h3>
-                <p className="text-sm text-muted-foreground">
-                  모든 팀의 세션이 일괄 생성되고, 디스코드 역할 기반으로 팀원이 자동 등록됩니다.
-                </p>
+            {/* Header with create button */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">피어리뷰 세션</h2>
+              {!showStartForm && (
+                <button
+                  onClick={() => setShowStartForm(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  새 피어리뷰 생성
+                </button>
+              )}
+            </div>
+
+            {/* Start form (inline) */}
+            {showStartForm && (
+              <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+                <h3 className="font-semibold text-sm">새 피어리뷰 세션 시작</h3>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newReviewTitle}
                     onChange={(e) => setNewReviewTitle(e.target.value)}
                     placeholder="세션 제목 (예: 4월 피어리뷰)"
-                    className="flex-1 px-4 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     disabled={startingReview}
                     onKeyDown={(e) => { if (e.key === "Enter") startAllReviewSessions(); }}
+                    autoFocus
                   />
                   <button
                     onClick={startAllReviewSessions}
                     disabled={startingReview || !newReviewTitle.trim()}
-                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                   >
-                    {startingReview ? "생성 중..." : "시작"}
+                    {startingReview ? "생성 중..." : "생성"}
                   </button>
                   <button
                     onClick={() => { setShowStartForm(false); setNewReviewTitle(""); }}
-                    className="px-4 py-2.5 border border-border rounded-lg text-sm hover:bg-accent transition-colors"
+                    className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors"
                   >
                     취소
                   </button>
@@ -958,128 +964,171 @@ export function AdminDashboard() {
               </div>
             )}
 
-            {/* Session List */}
+            {/* Grouped Session List */}
             {reviewSessions.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">리뷰 세션이 없습니다.</div>
             ) : (
-              reviewSessions.map((sess) => (
-                <div key={sess.id} className="bg-card border border-border rounded-xl overflow-hidden">
-                  {/* Session header */}
-                  <div className="p-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg">{sess.title}</h3>
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
-                        sess.active ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
-                      }`}>
-                        {sess.active ? "진행 중" : "종료"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {sess.team_name} — {sess.members?.length || 0}명 — {new Date(sess.started_at).toLocaleDateString("ko-KR")}
-                    </p>
+              (() => {
+                // Group sessions by title
+                const groups: Record<string, { title: string; active: boolean; started_at: string; sessions: any[] }> = {};
+                reviewSessions.forEach((sess) => {
+                  const key = sess.title;
+                  if (!groups[key]) {
+                    groups[key] = { title: sess.title, active: sess.active, started_at: sess.started_at, sessions: [] };
+                  }
+                  groups[key].sessions.push(sess);
+                  if (sess.active) groups[key].active = true;
+                });
 
-                    {/* Action buttons - text labels */}
-                    <div className="flex flex-wrap items-center gap-2 mt-4">
-                      <button
-                        onClick={() => fetchReviewStatus(sess.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        현황 보기
-                      </button>
-                      <button
-                        onClick={() => sendReviewReminder(sess.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-                      >
-                        <Bell className="w-3.5 h-3.5" />
-                        리마인드 발송
-                      </button>
-                      <button
-                        onClick={() => exportReviewCsv(sess.id, "common")}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        공통 리뷰 CSV
-                      </button>
-                      <button
-                        onClick={() => exportReviewCsv(sess.id, "leader")}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        리더 평가 CSV
-                      </button>
-                      {sess.active && (
-                        <button
-                          onClick={() => endReviewSession(sess.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-destructive/30 text-destructive bg-destructive/5 rounded-lg hover:bg-destructive/10 transition-colors"
-                        >
-                          <StopCircle className="w-3.5 h-3.5" />
-                          세션 종료
-                        </button>
-                      )}
-                    </div>
+                return Object.entries(groups).map(([key, group]) => (
+                  <div key={key} className="bg-card border border-border rounded-xl overflow-hidden">
+                    {/* Group header (clickable) */}
+                    <button
+                      onClick={() => setExpandedReviewGroup(expandedReviewGroup === key ? null : key)}
+                      className="w-full p-5 flex items-center justify-between hover:bg-accent/30 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold text-lg">{group.title}</h3>
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                          group.active ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                        }`}>
+                          {group.active ? "진행 중" : "종료"}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {group.sessions.length}개 팀
+                        </span>
+                      </div>
+                      <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expandedReviewGroup === key ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Expanded team list */}
+                    {expandedReviewGroup === key && (
+                      <div className="border-t border-border">
+                        {group.sessions.map((sess) => (
+                          <div key={sess.id} className="border-b border-border/50 last:border-0">
+                            {/* Team header */}
+                            <button
+                              onClick={() => {
+                                if (expandedReviewTeam === sess.id) {
+                                  setExpandedReviewTeam(null);
+                                } else {
+                                  setExpandedReviewTeam(sess.id);
+                                  fetchReviewStatus(sess.id);
+                                }
+                              }}
+                              className="w-full px-5 py-4 flex items-center justify-between hover:bg-accent/20 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="font-medium">{sess.team_name}</span>
+                                <span className="text-sm text-muted-foreground">{sess.members?.length || 0}명</span>
+                              </div>
+                              <svg className={`w-4 h-4 text-muted-foreground transition-transform ${expandedReviewTeam === sess.id ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {/* Team detail */}
+                            {expandedReviewTeam === sess.id && (
+                              <div className="px-5 pb-5 space-y-4">
+                                {/* Action buttons */}
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <button
+                                    onClick={() => sendReviewReminder(sess.id)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                  >
+                                    <Bell className="w-3.5 h-3.5" />
+                                    리마인드 발송
+                                  </button>
+                                  <button
+                                    onClick={() => exportReviewCsv(sess.id, "common")}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    공통 리뷰 CSV
+                                  </button>
+                                  <button
+                                    onClick={() => exportReviewCsv(sess.id, "leader")}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    리더 평가 CSV
+                                  </button>
+                                  {sess.active && (
+                                    <button
+                                      onClick={() => endReviewSession(sess.id)}
+                                      className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-destructive/30 text-destructive bg-destructive/5 rounded-lg hover:bg-destructive/10 transition-colors"
+                                    >
+                                      <StopCircle className="w-3.5 h-3.5" />
+                                      세션 종료
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Status table */}
+                                {reviewStatusLoading && selectedReviewSession === sess.id ? (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="w-4 h-4 animate-spin" /> 불러오는 중...
+                                  </div>
+                                ) : selectedReviewSession === sess.id && (
+                                  <div className="overflow-x-auto border border-border rounded-lg">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
+                                          <th className="text-left font-medium px-4 py-2.5 min-w-[200px]">이름</th>
+                                          <th className="text-center font-medium px-4 py-2.5 min-w-[100px]">공통 리뷰</th>
+                                          <th className="text-center font-medium px-4 py-2.5 min-w-[100px]">리더 평가</th>
+                                          <th className="text-center font-medium px-4 py-2.5 min-w-[80px]">상태</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {reviewStatusData.map((member: any) => (
+                                          <tr key={member.discord_id} className="border-b border-border/50 last:border-0">
+                                            <td className="px-4 py-2.5">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-medium">{member.display_name}</span>
+                                                {member.is_leader && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">Leader</span>
+                                                )}
+                                              </div>
+                                            </td>
+                                            <td className="text-center px-4 py-2.5">
+                                              <span className={member.common_done >= member.common_total ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                                                {member.common_done}/{member.common_total}
+                                              </span>
+                                            </td>
+                                            <td className="text-center px-4 py-2.5">
+                                              <span className={member.leader_done >= member.leader_total ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                                                {member.leader_done}/{member.leader_total}
+                                              </span>
+                                            </td>
+                                            <td className="text-center px-4 py-2.5">
+                                              {member.complete ? (
+                                                <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                                  <Check className="w-3 h-3" /> 완료
+                                                </span>
+                                              ) : (
+                                                <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
+                                                  <X className="w-3 h-3" /> 미완료
+                                                </span>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-
-                  {/* Status detail table */}
-                  {selectedReviewSession === sess.id && (
-                    <div className="border-t border-border">
-                      {reviewStatusLoading ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground p-5">
-                          <Loader2 className="w-4 h-4 animate-spin" /> 불러오는 중...
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-border text-xs text-muted-foreground">
-                                <th className="text-left font-medium px-5 py-3 min-w-[200px]">이름</th>
-                                <th className="text-center font-medium px-4 py-3 min-w-[100px]">공통 리뷰</th>
-                                <th className="text-center font-medium px-4 py-3 min-w-[100px]">리더 평가</th>
-                                <th className="text-center font-medium px-4 py-3 min-w-[80px]">상태</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {reviewStatusData.map((member: any) => (
-                                <tr key={member.discord_id} className="border-b border-border/50 last:border-0">
-                                  <td className="px-5 py-3">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">{member.display_name}</span>
-                                      {member.is_leader && (
-                                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">Leader</span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="text-center px-4 py-3">
-                                    <span className={member.common_done >= member.common_total ? "text-green-600 font-medium" : "text-muted-foreground"}>
-                                      {member.common_done}/{member.common_total}
-                                    </span>
-                                  </td>
-                                  <td className="text-center px-4 py-3">
-                                    <span className={member.leader_done >= member.leader_total ? "text-green-600 font-medium" : "text-muted-foreground"}>
-                                      {member.leader_done}/{member.leader_total}
-                                    </span>
-                                  </td>
-                                  <td className="text-center px-4 py-3">
-                                    {member.complete ? (
-                                      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                                        <Check className="w-3 h-3" /> 완료
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
-                                        <X className="w-3 h-3" /> 미완료
-                                      </span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
+                ));
+              })()
             )}
           </div>
         )}
