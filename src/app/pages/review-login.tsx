@@ -40,8 +40,8 @@ export function ReviewLogin() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#5865F2]/10 mb-4">
             <MessageCircle className="h-8 w-8 text-[#5865F2]" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">KHUX 피어리뷰</h1>
-          <p className="text-muted-foreground">디스코드 계정으로 로그인하여 피어리뷰를 작성하세요</p>
+          <h1 className="text-3xl font-bold mb-2">KHUX Members Only</h1>
+          <p className="text-muted-foreground">KHUX 학회원 전용 페이지입니다. 디스코드 계정으로 로그인해주세요.</p>
         </div>
 
         <div className="bg-card border border-border rounded-xl p-8 shadow-lg">
