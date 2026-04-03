@@ -1263,6 +1263,83 @@ app.get("/make-server-d0140d55/review/bot/status/:team/:month", async (c) => {
   }
 });
 
+// ============ Admin: Start all team sessions ============
+
+// Fetch Discord guild members by role and create sessions for all teams
+app.post("/make-server-d0140d55/review/sessions/start-all", async (c) => {
+  try {
+    const adminToken = c.req.header("x-user-token");
+    const { data: { user } } = await supabase.auth.getUser(adminToken);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const { title } = await c.req.json();
+    if (!title) return c.json({ error: "title required" }, 400);
+
+    const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+    if (!botToken) return c.json({ error: "Bot token not configured" }, 500);
+
+    // Fetch all guild members (paginated, max 1000)
+    let allMembers: any[] = [];
+    let after = "0";
+    while (true) {
+      const res = await fetch(
+        `https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members?limit=1000&after=${after}`,
+        { headers: { Authorization: `Bot ${botToken}` } }
+      );
+      if (!res.ok) {
+        console.log(`Discord API error: ${res.status}`);
+        break;
+      }
+      const batch = await res.json();
+      if (batch.length === 0) break;
+      allMembers = allMembers.concat(batch);
+      if (batch.length < 1000) break;
+      after = batch[batch.length - 1].user.id;
+    }
+
+    const now = new Date();
+    const month = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const results: any[] = [];
+
+    for (const [teamKey, teamConfig] of Object.entries(TEAM_ROLES)) {
+      // Filter members with this team's role
+      const teamMembers = allMembers
+        .filter((m: any) => !m.user.bot && m.roles.includes(teamConfig.role_id))
+        .map((m: any) => {
+          const displayName = m.nick || m.user.global_name || m.user.username;
+          return {
+            discord_id: m.user.id,
+            display_name: displayName,
+            is_leader: displayName?.includes("Leader") ?? false,
+          };
+        });
+
+      if (teamMembers.length === 0) continue;
+
+      const sessionId = `${teamKey}_${month}`;
+      const sessionData = {
+        id: sessionId,
+        title,
+        team: teamKey,
+        team_name: teamConfig.name,
+        started_at: now.toISOString(),
+        active: true,
+        members: teamMembers,
+        criteria: REVIEW_CRITERIA,
+        leader_criteria: LEADER_CRITERIA,
+      };
+
+      await kv.set(`review_session:${sessionId}`, sessionData);
+      results.push({ team: teamConfig.name, members: teamMembers.length });
+    }
+
+    return c.json({ success: true, sessions: results });
+  } catch (error) {
+    console.log(`Error starting all sessions: ${error}`);
+    return c.json({ error: "Failed to start sessions" }, 500);
+  }
+});
+
 // ============ Review Config (public) ============
 
 app.get("/make-server-d0140d55/review/config", (c) => {

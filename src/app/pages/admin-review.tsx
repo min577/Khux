@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { ArrowLeft, Download, StopCircle, RefreshCw, Check, X } from "lucide-react";
+import { ArrowLeft, Download, StopCircle, RefreshCw, Check, X, Play } from "lucide-react";
 import { supabase, apiFetchAuth, API_BASE_URL } from "../../utils/supabase-client";
 import { publicAnonKey } from "/utils/supabase/info";
 
@@ -38,6 +38,10 @@ export function AdminReview() {
   const [statusData, setStatusData] = useState<MemberStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [showStartForm, setShowStartForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [startResult, setStartResult] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -91,6 +95,35 @@ export function AdminReview() {
       if (res.ok) fetchSessions();
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  async function startAllSessions() {
+    if (!newTitle.trim()) return;
+    setStarting(true);
+    setStartResult(null);
+    try {
+      const res = await apiFetchAuth("/review/sessions/start-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const summary = data.sessions
+          .map((s: any) => `${s.team} (${s.members}명)`)
+          .join(", ");
+        setStartResult(`세션 생성 완료: ${summary}`);
+        setNewTitle("");
+        setShowStartForm(false);
+        fetchSessions();
+      } else {
+        setStartResult(`오류: ${data.error}`);
+      }
+    } catch (err) {
+      setStartResult("세션 생성에 실패했습니다.");
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -148,13 +181,59 @@ export function AdminReview() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Start Session */}
+        {!showStartForm ? (
+          <button
+            onClick={() => setShowStartForm(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            새 피어리뷰 시작
+          </button>
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <h3 className="font-semibold">새 피어리뷰 세션 시작</h3>
+            <p className="text-sm text-muted-foreground">
+              모든 팀의 세션이 일괄 생성되고, 디스코드 역할 기반으로 팀원이 자동 등록됩니다.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="세션 제목 (예: 4월 피어리뷰)"
+                className="flex-1 px-4 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                disabled={starting}
+              />
+              <button
+                onClick={startAllSessions}
+                disabled={starting || !newTitle.trim()}
+                className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {starting ? "생성 중..." : "시작"}
+              </button>
+              <button
+                onClick={() => { setShowStartForm(false); setNewTitle(""); }}
+                className="px-4 py-2.5 border border-border rounded-lg text-sm hover:bg-accent transition-colors"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
+        {startResult && (
+          <div className={`p-3 rounded-lg text-sm ${
+            startResult.startsWith("오류") ? "bg-destructive/10 text-destructive" : "bg-green-50 text-green-700"
+          }`}>
+            {startResult}
+          </div>
+        )}
+
         {/* Session List */}
         {sessions.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground">리뷰 세션이 없습니다.</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              디스코드 봇에서 /리뷰시작 명령어로 세션을 시작하세요.
-            </p>
           </div>
         ) : (
           <div className="space-y-4">
