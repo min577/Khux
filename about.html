@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About — KHUX</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    /* ── 기본 변수 ── */
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #1a1a1a;
+      --border: rgba(255,255,255,0.08);
+      --accent: #c8ff00;       /* 라임 그린 포인트 */
+      --accent2: #3a3aff;      /* 딥 블루 세컨드 포인트 */
+      --text: #f0f0f0;
+      --text-muted: #666;
+      --text-sub: #999;
+      --radius: 16px;
+      --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── 스크롤 페이드인 유틸 ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity 0.7s var(--transition), transform 0.7s var(--transition);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      backdrop-filter: blur(20px);
+      background: rgba(10,10,10,0.7);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-sub);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover,
+    .nav-links a.active { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 48px 80px;
+      overflow: hidden;
+    }
+
+    /* 배경 그리드 + 그라디언트 */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%);
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: -200px; left: -200px;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(200,255,0,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(200,255,0,0.3);
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+      width: fit-content;
+    }
+
+    .hero h1 {
+      font-size: clamp(52px, 7vw, 100px);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 32px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .hero-desc {
+      max-width: 560px;
+      font-size: 17px;
+      color: var(--text-sub);
+      line-height: 1.8;
+      font-weight: 400;
+    }
+
+    /* ── SECTION 공통 ── */
+    section {
+      padding: 120px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+
+    .section-body {
+      font-size: 16px;
+      color: var(--text-sub);
+      line-height: 1.9;
+      max-width: 640px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 48px;
+    }
+
+    /* ── 비전/미션 ── */
+    .vm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 64px;
+    }
+    .vm-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .vm-card:hover {
+      border-color: rgba(200,255,0,0.2);
+      transform: translateY(-4px);
+    }
+    .vm-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .vm-card:hover::before { opacity: 1; }
+
+    .vm-icon {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+    .vm-card h3 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .vm-card p {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.4;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .vm-card .vm-sub {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-sub);
+      margin-top: 12px;
+      line-height: 1.7;
+    }
+
+    /* ── 활동 분야 ── */
+    .activity-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 64px;
+    }
+    .activity-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: background var(--transition), border-color var(--transition), transform var(--transition);
+      cursor: default;
+    }
+    .activity-item:hover {
+      background: var(--surface2);
+      border-color: rgba(255,255,255,0.15);
+      transform: translateY(-6px);
+    }
+    .activity-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+    .activity-icon { font-size: 28px; }
+    .activity-item h4 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .activity-item p {
+      font-size: 13px;
+      color: var(--text-sub);
+      line-height: 1.7;
+    }
+
+    /* ── 팀 소개 카드 ── */
+    .teams-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 64px;
+      gap: 40px;
+    }
+    .teams-header .section-body { margin: 0; }
+
+    .teams-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .team-card {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: transform var(--transition), box-shadow var(--transition);
+      position: relative;
+    }
+    .team-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+    }
+
+    /* 팀별 색상 */
+    .team-card.ops    { --team-color: #c8ff00; }
+    .team-card.brand  { --team-color: #ff6b35; }
+    .team-card.edu    { --team-color: #3a3aff; }
+
+    .team-card-top {
+      padding: 36px 32px 28px;
+      background: var(--surface);
+      position: relative;
+      overflow: hidden;
+    }
+    .team-card-top::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; right: -60px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: var(--team-color);
+      opacity: 0.07;
+      transition: opacity var(--transition), transform var(--transition);
+    }
+    .team-card:hover .team-card-top::after {
+      opacity: 0.12;
+      transform: scale(1.2);
+    }
+
+    .team-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--team-color);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 5px 12px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+    }
+    .team-name {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .team-eng {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .team-icon {
+      font-size: 40px;
+      position: absolute;
+      top: 32px; right: 32px;
+    }
+
+    /* 팀 컬러 바 */
+    .team-bar {
+      height: 3px;
+      background: var(--team-color);
+      opacity: 0.6;
+    }
+
+    .team-card-body {
+      padding: 28px 32px 32px;
+      background: var(--surface2);
+    }
+    .team-desc {
+      font-size: 14px;
+      color: var(--text-sub);
+      line-height: 1.75;
+      margin-bottom: 24px;
+    }
+    .team-roles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .role-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 100px;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .team-card:hover .role-tag {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.12);
+      color: var(--text);
+    }
+
+    /* ── 수치 스탯 ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-top: 80px;
+    }
+    .stat-item {
+      background: var(--surface);
+      padding: 40px 32px;
+      text-align: center;
+      transition: background var(--transition);
+    }
+    .stat-item:hover { background: var(--surface2); }
+    .stat-num {
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ── 푸터 ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer .logo {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    footer .logo span { color: var(--accent); }
+    footer p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* ── 반응형 ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+
+      .hero { padding: 100px 24px 60px; }
+      section { padding: 80px 24px; }
+      .divider { margin: 0 24px; }
+
+      .vm-grid { grid-template-columns: 1fr; }
+      .activity-list { grid-template-columns: 1fr; }
+      .teams-grid { grid-template-columns: 1fr; }
+      .teams-header { flex-direction: column; align-items: flex-start; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAV ── -->
+  <nav>
+    <a href="index.html" class="nav-logo">KH<span>UX</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html" class="active">About</a></li>
+      <li><a href="#activities">Activities</a></li>
+      <li><a href="#team">Team</a></li>
+      <li><a href="recruit.html">Recruit</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-tag">About KHUX</div>
+    <h1>우리는<br /><em>UX를</em><br />연구합니다</h1>
+    <p class="hero-desc">
+      KHUX는 경희대학교 내 UX·AI 연구 학회입니다.<br />
+      데이터와 디자인 사이에서 사용자 경험의 미래를 탐구합니다.
+    </p>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── ABOUT ── -->
+  <section id="about" style="padding-top: 100px;">
+    <p class="section-label reveal">Who We Are</p>
+    <h2 class="section-title reveal" style="transition-delay:0.08s">
+      사용자 경험을 설계하는<br />경희대 UX 학회
+    </h2>
+    <p class="section-body reveal" style="transition-delay:0.16s">
+      KHUX(Kyung Hee UX)는 경희대학교 학생들이 UX 디자인과 AI 기술을 중심으로 
+      실제 프로덕트를 기획·제안·구현하는 학술 연구 학회입니다. 
+      이론적 탐구와 실무적 적용을 동시에 추구하며, 
+      서비스 개선 제안부터 실제 프로토타입 제작까지 함께 경험합니다.
+    </p>
+
+    <!-- 통계 -->
+    <div class="stats-row reveal" style="transition-delay:0.24s">
+      <div class="stat-item">
+        <div class="stat-num">3+</div>
+        <div class="stat-label">활동 팀</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">20+</div>
+        <div class="stat-label">활동 멤버</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">10+</div>
+        <div class="stat-label">프로젝트</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">2024</div>
+        <div class="stat-label">설립 연도</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ── 비전 / 미션 ── -->
+  <section id="vision">
+    <p class="section-label reveal">Vision &amp; Mission</p>
+    <h2 class="section-title reveal" style="transition-delay:0.08s">방향과 목표</h2>
+
+    <div class="vm-grid">
+      <div class="vm-card reveal" style="transition-delay:0.12s">
+        <div class="vm-icon">🔭</div>
+        <h3>Vision</h3>
+        <p>AI 시대의 UX를 선도하는<br />경희대 최고의 실전 연구 학회</p>
+        <p class="vm-sub">
+          기술과 인간의 접점에서 진정한 가치를 만드는 
+          연구자·디자이너·기획자를 배출합니다.
+        </p>
+      </div>
+      <div class="vm-card reveal" style="transition-delay:0.2s">
+        <div class="vm-icon">🎯</div>
+        <h3>Mission</h3>
+        <p>사용자 중심 사고로<br />실제 문제를 해결한다</p>
+        <p class="vm-sub">
+          데이터 기반 분석과 디자인 씽킹을 결합해 
+          현실 서비스에 적용 가능한 UX 솔루션을 제안합니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ── 활동 분야 ── -->
+  <section id="activities">
+    <p class="section-label reveal">What We Do</p>
+    <h2 class="section-title reveal" style="transition-delay:0.08s">활동 분야</h2>
+    <p class="section-body reveal" style="transition-delay:0.16s">
+      KHUX는 UX 연구, AI 기능 기획, 브랜드 경험 설계를 중심으로 
+      다양한 실전 활동을 진행합니다.
+    </p>
+
+    <div class="activity-list">
+      <div class="activity-item reveal" style="transition-delay:0.1s">
+        <span class="activity-num">01</span>
+        <span class="activity-icon">🔍</span>
+        <h4>UX 리서치</h4>
+        <p>사용자 인터뷰, 사용성 테스트, 데이터 분석을 통해 실제 사용자의 니즈와 페인 포인트를 탐구합니다.</p>
+      </div>
+      <div class="activity-item reveal" style="transition-delay:0.18s">
+        <span class="activity-num">02</span>
+        <span class="activity-icon">🤖</span>
+        <h4>AI 기능 기획</h4>
+        <p>기존 서비스에 AI를 접목한 새로운 기능을 기획하고, UX 관점에서 실현 가능성을 검증합니다.</p>
+      </div>
+      <div class="activity-item reveal" style="transition-delay:0.26s">
+        <span class="activity-num">03</span>
+        <span class="activity-icon">🎨</span>
+        <h4>UI/UX 디자인</h4>
+        <p>Figma를 활용한 와이어프레임, 프로토타입 제작으로 아이디어를 구체적인 화면으로 구현합니다.</p>
+      </div>
+      <div class="activity-item reveal" style="transition-delay:0.1s">
+        <span class="activity-num">04</span>
+        <span class="activity-icon">📊</span>
+        <h4>케이스 스터디</h4>
+        <p>국내외 서비스를 분석해 UX 전략, 비즈니스 임팩트, 개선 방안을 도출합니다.</p>
+      </div>
+      <div class="activity-item reveal" style="transition-delay:0.18s">
+        <span class="activity-num">05</span>
+        <span class="activity-icon">🧑‍💻</span>
+        <h4>프로토타입 구현</h4>
+        <p>HTML/CSS/JS를 활용해 기획한 UX 아이디어를 직접 작동하는 프로토타입으로 만듭니다.</p>
+      </div>
+      <div class="activity-item reveal" style="transition-delay:0.26s">
+        <span class="activity-num">06</span>
+        <span class="activity-icon">🤝</span>
+        <h4>스터디 & 세미나</h4>
+        <p>UX 트렌드, 디자인 시스템, AI 기술 등을 주제로 구성원들이 함께 배우고 성장합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ── 팀 소개 ── -->
+  <section id="team" style="max-width: 1200px;">
+    <div class="teams-header">
+      <div>
+        <p class="section-label reveal">Our Teams</p>
+        <h2 class="section-title reveal" style="transition-delay:0.08s">팀 소개</h2>
+      </div>
+      <p class="section-body reveal" style="transition-delay:0.16s; font-size:15px;">
+        KHUX는 세 개의 팀이 각자의 전문성으로 협력하며 
+        하나의 완성된 UX 학회를 만들어 나갑니다.
+      </p>
+    </div>
+
+    <div class="teams-grid">
+
+      <!-- Ops 팀 -->
+      <div class="team-card ops reveal" style="transition-delay:0.1s">
+        <div class="team-card-top">
+          <span class="team-icon">⚙️</span>
+          <span class="team-badge">Team 01</span>
+          <div class="team-name">Ops 팀</div>
+          <div class="team-eng">Operations Team</div>
+        </div>
+        <div class="team-bar"></div>
+        <div class="team-card-body">
+          <p class="team-desc">
+            학회의 전체 운영을 책임집니다. 
+            일정 관리, 예산 운용, 팀 간 조율, 행사 기획까지 
+            KHUX가 원활하게 돌아갈 수 있도록 뒷받침하는 팀입니다. 
+            체계적인 운영 시스템으로 모든 구성원이 
+            본질적인 활동에 집중할 수 있는 환경을 만듭니다.
+          </p>
+          <div class="team-roles">
+            <span class="role-tag">일정 관리</span>
+            <span class="role-tag">예산 운용</span>
+            <span class="role-tag">행사 기획</span>
+            <span class="role-tag">팀 조율</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand 팀 -->
+      <div class="team-card brand reveal" style="transition-delay:0.2s">
+        <div class="team-card-top">
+          <span class="team-icon">✦</span>
+          <span class="team-badge">Team 02</span>
+          <div class="team-name">Brand 팀</div>
+          <div class="team-eng">Brand Experience Team</div>
+        </div>
+        <div class="team-bar"></div>
+        <div class="team-card-body">
+          <p class="team-desc">
+            KHUX의 브랜드 정체성과 외부 커뮤니케이션을 담당합니다. 
+            SNS 콘텐츠, 디자인 에셋, 학회 웹사이트 등 
+            시각적 경험 전반을 설계하며, 
+            KHUX가 어떻게 보이고 어떻게 기억되는지를 
+            전략적으로 관리합니다.
+          </p>
+          <div class="team-roles">
+            <span class="role-tag">SNS 운영</span>
+            <span class="role-tag">디자인 에셋</span>
+            <span class="role-tag">웹사이트</span>
+            <span class="role-tag">비주얼 아이덴티티</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Education 팀 -->
+      <div class="team-card edu reveal" style="transition-delay:0.3s">
+        <div class="team-card-top">
+          <span class="team-icon">📚</span>
+          <span class="team-badge">Team 03</span>
+          <div class="team-name">Education 팀</div>
+          <div class="team-eng">Education & Research Team</div>
+        </div>
+        <div class="team-bar"></div>
+        <div class="team-card-body">
+          <p class="team-desc">
+            구성원의 성장을 이끄는 학습·연구 팀입니다. 
+            UX 방법론, AI 기술, 케이스 스터디를 
+            체계적인 커리큘럼으로 운영합니다. 
+            스터디 설계부터 발표 피드백까지, 
+            모든 구성원이 실력 있는 UX 전문가로 성장할 수 있도록 지원합니다.
+          </p>
+          <div class="team-roles">
+            <span class="role-tag">커리큘럼 설계</span>
+            <span class="role-tag">스터디 운영</span>
+            <span class="role-tag">세미나 기획</span>
+            <span class="role-tag">프로젝트 피드백</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── 푸터 ── -->
+  <footer>
+    <div class="logo">KH<span>UX</span></div>
+    <p>© 2025 KHUX — Kyung Hee University UX Lab</p>
+  </footer>
+
+  <!-- ── 스크롤 애니메이션 JS ── -->
+  <script>
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    revealEls.forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>

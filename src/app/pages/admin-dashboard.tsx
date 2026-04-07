@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import {
   LogOut,
   PlusCircle,
@@ -19,14 +19,16 @@ import {
   StopCircle,
   Bell,
   Check,
-  RefreshCw
+  RefreshCw,
+  UserPlus
 } from "lucide-react";
 import { supabase, apiFetch, apiFetchAuth, uploadImage, API_BASE_URL } from "../../utils/supabase-client";
 import { publicAnonKey } from "/utils/supabase/info";
 import type { Article, NewsItem, GalleryItem, Activity } from "../data/mock-data";
 import { MarkdownEditor } from "../components/markdown-editor";
+import { AdminRecruitTab } from "./admin-recruit";
 
-type TabType = "articles" | "news" | "gallery" | "activities" | "review";
+type TabType = "articles" | "news" | "gallery" | "activities" | "review" | "recruit";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -744,13 +746,22 @@ export function AdminDashboard() {
               </div>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              로그아웃
-            </button>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/admin/applications"
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+              >
+                <Users className="h-4 w-4" />
+                지원서 검토
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                로그아웃
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -817,6 +828,7 @@ export function AdminDashboard() {
                 { key: "gallery" as TabType, icon: ImageIcon, label: "갤러리 관리" },
                 { key: "activities" as TabType, icon: Calendar, label: "액티비티 관리" },
                 { key: "review" as TabType, icon: ClipboardCheck, label: "피어리뷰 관리" },
+                { key: "recruit" as TabType, icon: UserPlus, label: "리크루팅 설정" },
               ]).map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
@@ -840,8 +852,8 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* Search and Add (hidden for review tab) */}
-        {activeTab !== "review" && (
+        {/* Search and Add (hidden for review/recruit tabs) */}
+        {activeTab !== "review" && activeTab !== "recruit" && (
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -1137,6 +1149,8 @@ export function AdminDashboard() {
             )}
           </div>
         )}
+
+        {activeTab === "recruit" && <AdminRecruitTab />}
       </div>
 
       {/* Add/Edit Modal */}

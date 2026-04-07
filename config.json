@@ -1,0 +1,54 @@
+{
+  "timezone": "Asia/Seoul",
+  "csv_directory": "review_data",
+  "result_channel_id": null,
+  "teams": {
+    "operation": {
+      "name": "Operation",
+      "role_id": null
+    },
+    "education": {
+      "name": "Education",
+      "role_id": null
+    },
+    "growth_brand": {
+      "name": "Growth-Brand",
+      "role_id": null
+    },
+    "growth_pr": {
+      "name": "Growth-PR",
+      "role_id": null
+    }
+  },
+  "review_criteria": [
+    {
+      "name": "커뮤니케이션 참여도",
+      "desc": "팀 내 소통에 얼마나 적극적으로 참여했나요? (응답 속도, 의사 전달의 명확성, 논의 참여도 등)"
+    },
+    {
+      "name": "책임감 및 과업 수행도",
+      "desc": "맡은 역할을 책임감 있게 수행했나요? (마감 기한 준수, 작업 완성도, 성실성 등)"
+    },
+    {
+      "name": "팀 이해도 및 협업 기여도",
+      "desc": "팀 전체의 역할과 일정 흐름을 충분히 이해하고 있었나요? (디스코드/스레드 내용 숙지, 진행 상황 팔로우업 등)"
+    }
+  ],
+  "leader_criteria": [
+    {
+      "name": "리더십 및 팀 운영 능력",
+      "desc": "프로젝트를 체계적으로 이끌고 있었나요? (일정 관리, 역할 분배, 의사결정 등)"
+    },
+    {
+      "name": "커뮤니케이션 및 조율 능력",
+      "desc": "팀원 간 의견을 잘 조율하고 원활한 소통 환경을 만들었나요?"
+    },
+    {
+      "name": "문제 대응 및 방향성 제시",
+      "desc": "문제에 대해 적절히 대응하고, 팀의 방향성을 명확하게 제시했나요?"
+    }
+  ],
+  "score_min": 1,
+  "score_max": 5,
+  "one_on_one_threshold": 2.5
+}
