@@ -24,18 +24,18 @@ import {
 } from "lucide-react";
 import { supabase, apiFetch, apiFetchAuth, uploadImage, API_BASE_URL } from "../../utils/supabase-client";
 import { publicAnonKey } from "/utils/supabase/info";
-import type { Article, NewsItem, GalleryItem, Activity } from "../data/mock-data";
+import type { Article, NoticeItem, GalleryItem, Activity } from "../data/mock-data";
 import { MarkdownEditor } from "../components/markdown-editor";
 import { AdminRecruitTab } from "./admin-recruit";
 
-type TabType = "articles" | "news" | "gallery" | "activities" | "review" | "recruit";
+type TabType = "articles" | "notice" | "gallery" | "activities" | "review" | "recruit";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("articles");
   const [searchQuery, setSearchQuery] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
-  const [news, setNews] = useState<NewsItem[]>([]);
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,7 @@ export function AdminDashboard() {
         activitiesRes.json(),
       ]);
       setArticles(articlesData.articles || []);
-      setNews(newsData.news || []);
+      setNotices(newsData.news || []);
       setGallery(galleryData.gallery || []);
       setActivities(activitiesData.activities || []);
     } catch (error) {
@@ -248,14 +248,14 @@ export function AdminDashboard() {
     }
   };
 
-  const handleDeleteNews = async (id: string) => {
-    if (!confirm("정말로 이 뉴스를 삭제하시겠습니까?")) return;
+  const handleDeleteNotice = async (id: string) => {
+    if (!confirm("정말로 이 공지사항을 삭제하시겠습니까?")) return;
     try {
       const res = await apiFetchAuth(`/news/${id}`, { method: "DELETE" });
       if (res.ok) {
-        setNews(news.filter((n) => n.id !== id));
+        setNotices(notices.filter((n) => n.id !== id));
       } else {
-        alert("뉴스 삭제에 실패했습니다.");
+        alert("공지사항 삭제에 실패했습니다.");
       }
     } catch (error) {
       alert("인증이 만료되었습니다. 다시 로그인해주세요.");
@@ -311,16 +311,17 @@ export function AdminDashboard() {
     setShowAddModal(true);
   };
 
-  const handleEditNews = (newsItem: NewsItem) => {
-    setEditingId(newsItem.id);
+  const handleEditNotice = (noticeItem: NoticeItem) => {
+    setEditingId(noticeItem.id);
     setFormData({
-      title: newsItem.title,
-      content: newsItem.content,
-      date: newsItem.date,
-      category: newsItem.category,
+      title: noticeItem.title,
+      content: noticeItem.content,
+      date: noticeItem.date,
+      category: noticeItem.category,
+      pinned: noticeItem.pinned || false,
     });
-    setImagePreview(newsItem.imageUrl || null);
-    setActiveTab("news");
+    setImagePreview(noticeItem.imageUrl || null);
+    setActiveTab("notice");
     setShowAddModal(true);
   };
 
@@ -388,7 +389,7 @@ export function AdminDashboard() {
     }
   };
 
-  const handleUpdateNews = async (e: React.FormEvent) => {
+  const handleUpdateNotice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingId) return;
     setSubmitting(true);
@@ -402,17 +403,18 @@ export function AdminDashboard() {
         body: JSON.stringify({
           title: formData.title, content: formData.content,
           date: formData.date || new Date().toISOString().split('T')[0],
-          category: formData.category, ...(imageUrl && { imageUrl }),
+          category: formData.category, pinned: formData.pinned || false,
+          ...(imageUrl && { imageUrl }),
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        setNews(news.map(n => n.id === editingId ? data.news : n));
+        setNotices(notices.map(n => n.id === editingId ? data.news : n));
         closeModal();
-        alert("뉴스가 수정되었습니다!");
+        alert("공지사항이 수정되었습니다!");
       } else {
-        alert("뉴스 수정에 실패했습니다.");
+        alert("공지사항 수정에 실패했습니다.");
       }
     } catch (error) {
       alert("인증이 만료되었습니다. 다시 로그인해주세요.");
@@ -498,7 +500,7 @@ export function AdminDashboard() {
       article.author?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredNews = news.filter((item) =>
+  const filteredNotices = notices.filter((item) =>
     item.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -570,7 +572,7 @@ export function AdminDashboard() {
     }
   };
 
-  const handleAddNews = async (e: React.FormEvent) => {
+  const handleAddNotice = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
@@ -583,17 +585,18 @@ export function AdminDashboard() {
         body: JSON.stringify({
           title: formData.title, content: formData.content,
           date: formData.date || new Date().toISOString().split('T')[0],
-          category: formData.category, ...(imageUrl && { imageUrl }),
+          category: formData.category, pinned: formData.pinned || false,
+          ...(imageUrl && { imageUrl }),
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        setNews([data.news, ...news]);
+        setNotices([data.news, ...notices]);
         closeModal();
-        alert("뉴스가 추가되었습니다!");
+        alert("공지사항이 추가되었습니다!");
       } else {
-        alert("뉴스 추가에 실패했습니다.");
+        alert("공지사항 추가에 실패했습니다.");
       }
     } catch (error) {
       alert("인증이 만료되었습니다. 다시 로그인해주세요.");
@@ -681,14 +684,14 @@ export function AdminDashboard() {
     if (editingId) {
       switch (activeTab) {
         case "articles": return handleUpdateArticle;
-        case "news": return handleUpdateNews;
+        case "notice": return handleUpdateNotice;
         case "gallery": return handleUpdateGallery;
         case "activities": return handleUpdateActivity;
       }
     }
     switch (activeTab) {
       case "articles": return handleAddArticle;
-      case "news": return handleAddNews;
+      case "notice": return handleAddNotice;
       case "gallery": return handleAddGallery;
       case "activities": return handleAddActivity;
     }
@@ -698,7 +701,7 @@ export function AdminDashboard() {
     const action = editingId ? "수정" : "추가";
     switch (activeTab) {
       case "articles": return `아티클 ${action}`;
-      case "news": return `뉴스 ${action}`;
+      case "notice": return `공지사항 ${action}`;
       case "gallery": return `갤러리 ${action}`;
       case "activities": return `액티비티 ${action}`;
     }
@@ -707,7 +710,7 @@ export function AdminDashboard() {
   const getAddButtonLabel = () => {
     switch (activeTab) {
       case "articles": return "아티클 추가";
-      case "news": return "뉴스 추가";
+      case "notice": return "공지사항 추가";
       case "gallery": return "갤러리 추가";
       case "activities": return "액티비티 추가";
     }
@@ -716,7 +719,7 @@ export function AdminDashboard() {
   const getSearchPlaceholder = () => {
     switch (activeTab) {
       case "articles": return "아티클 검색...";
-      case "news": return "뉴스 검색...";
+      case "notice": return "공지사항 검색...";
       case "gallery": return "갤러리 검색...";
       case "activities": return "액티비티 검색...";
     }
@@ -787,8 +790,8 @@ export function AdminDashboard() {
                 <NewspaperIcon className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">뉴스</p>
-                <p className="text-xl font-bold">{news.length}</p>
+                <p className="text-xs text-muted-foreground">공지사항</p>
+                <p className="text-xl font-bold">{notices.length}</p>
               </div>
             </div>
           </div>
@@ -824,7 +827,7 @@ export function AdminDashboard() {
             <div className="flex gap-6 overflow-x-auto">
               {([
                 { key: "articles" as TabType, icon: FileText, label: "아티클 관리" },
-                { key: "news" as TabType, icon: NewspaperIcon, label: "뉴스 관리" },
+                { key: "notice" as TabType, icon: NewspaperIcon, label: "공지사항 관리" },
                 { key: "gallery" as TabType, icon: ImageIcon, label: "갤러리 관리" },
                 { key: "activities" as TabType, icon: Calendar, label: "액티비티 관리" },
                 { key: "review" as TabType, icon: ClipboardCheck, label: "피어리뷰 관리" },
@@ -885,13 +888,13 @@ export function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === "news" && (
+        {activeTab === "notice" && (
           <div className="space-y-4">
-            {filteredNews.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">뉴스가 없습니다</div>
+            {filteredNotices.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">공지사항이 없습니다</div>
             ) : (
-              filteredNews.map((item) => (
-                <NewsCardAdmin key={item.id} news={item} onDelete={handleDeleteNews} onEdit={handleEditNews} />
+              filteredNotices.map((item) => (
+                <NoticeCardAdmin key={item.id} notice={item} onDelete={handleDeleteNotice} onEdit={handleEditNotice} />
               ))
             )}
           </div>
@@ -1213,24 +1216,24 @@ export function AdminDashboard() {
                 </>
               )}
 
-              {/* News Form */}
-              {activeTab === "news" && (
+              {/* Notice Form */}
+              {activeTab === "notice" && (
                 <>
                   <div>
                     <label className="block text-sm font-medium mb-2">제목 *</label>
                     <input type="text" required value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="뉴스 제목" />
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="공지사항 제목" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">내용 *</label>
                     <textarea required value={formData.content || ""} onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none" rows={6} placeholder="뉴스 내용" />
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none" rows={6} placeholder="공지사항 내용" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">카테고리 *</label>
                     <div className="flex gap-2">
                       <select
-                        value={["Recruitment", "Event", "Project", "Announcement"].includes(formData.category || "") ? formData.category : "__custom__"}
+                        value={["일반", "모집", "행사", "프로젝트", "긴급"].includes(formData.category || "") ? formData.category : "__custom__"}
                         onChange={(e) => {
                           if (e.target.value === "__custom__") {
                             setFormData({ ...formData, category: "" });
@@ -1241,19 +1244,28 @@ export function AdminDashboard() {
                         className="w-1/2 px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       >
                         <option value="">카테고리 선택</option>
-                        <option value="Recruitment">Recruitment</option>
-                        <option value="Event">Event</option>
-                        <option value="Project">Project</option>
-                        <option value="Announcement">Announcement</option>
+                        <option value="일반">일반</option>
+                        <option value="모집">모집</option>
+                        <option value="행사">행사</option>
+                        <option value="프로젝트">프로젝트</option>
+                        <option value="긴급">긴급</option>
                         <option value="__custom__">직접 입력</option>
                       </select>
-                      {(!formData.category || !["Recruitment", "Event", "Project", "Announcement"].includes(formData.category)) && (
+                      {(!formData.category || !["일반", "모집", "행사", "프로젝트", "긴급"].includes(formData.category)) && (
                         <input type="text" required value={formData.category === "__custom__" ? "" : formData.category || ""}
                           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                           placeholder="카테고리 직접 입력"
                           className="w-1/2 px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                       )}
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" checked={formData.pinned || false} onChange={(e) => setFormData({ ...formData, pinned: e.target.checked })}
+                        className="sr-only peer" />
+                      <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                    <span className="text-sm font-medium">상단 고정</span>
                   </div>
                 </>
               )}
@@ -1384,21 +1396,22 @@ function ArticleCard({ article, onDelete, onEdit }: { article: Article, onDelete
   );
 }
 
-function NewsCardAdmin({ news, onDelete, onEdit }: { news: NewsItem, onDelete: (id: string) => void, onEdit: (news: NewsItem) => void }) {
+function NoticeCardAdmin({ notice, onDelete, onEdit }: { notice: NoticeItem, onDelete: (id: string) => void, onEdit: (notice: NoticeItem) => void }) {
   return (
-    <div className="p-6 bg-card border border-border rounded-xl hover:shadow-md transition-all">
+    <div className={`p-6 bg-card border border-border rounded-xl hover:shadow-md transition-all ${notice.pinned ? "border-primary/30 bg-primary/[0.02]" : ""}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
-            <span className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">{news.category}</span>
-            <span className="text-sm text-muted-foreground">{news.date}</span>
+            {notice.pinned && <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded font-bold">고정</span>}
+            <span className="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">{notice.category}</span>
+            <span className="text-sm text-muted-foreground">{notice.date}</span>
           </div>
-          <h3 className="text-lg font-medium mb-2">{news.title}</h3>
-          <p className="text-sm text-muted-foreground">{news.content}</p>
+          <h3 className="text-lg font-medium mb-2">{notice.title}</h3>
+          <p className="text-sm text-muted-foreground">{notice.content}</p>
         </div>
         <div className="flex gap-2">
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors" onClick={() => onEdit(news)}><Edit2 className="h-4 w-4" /></button>
-          <button className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors" onClick={() => onDelete(news.id)}><Trash2 className="h-4 w-4" /></button>
+          <button className="p-2 hover:bg-muted rounded-lg transition-colors" onClick={() => onEdit(notice)}><Edit2 className="h-4 w-4" /></button>
+          <button className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors" onClick={() => onDelete(notice.id)}><Trash2 className="h-4 w-4" /></button>
         </div>
       </div>
     </div>

@@ -10,14 +10,18 @@ export interface Article {
   tags: string[];
 }
 
-export interface NewsItem {
+export interface NoticeItem {
   id: string;
   title: string;
   content: string;
   date: string;
   category: string;
   imageUrl?: string;
+  pinned?: boolean;
 }
+
+/** @deprecated Use NoticeItem instead */
+export type NewsItem = NoticeItem;
 
 export interface Team {
   name: string;
@@ -47,7 +51,8 @@ export interface Activity {
 
 export const articles: Article[] = [];
 
-export const news: NewsItem[] = [];
+export const notices: NoticeItem[] = [];
+export const news = notices;
 
 export const gallery: GalleryItem[] = [];
 

@@ -14,7 +14,7 @@ export function Layout() {
     { id: "articles", label: "Articles" },
     { id: "activities", label: "Activities" },
     { id: "gallery", label: "Gallery" },
-    { id: "news", label: "News" },
+    { id: "notice", label: "Notice" },
   ];
 
   // Track active section on scroll (only on home page)

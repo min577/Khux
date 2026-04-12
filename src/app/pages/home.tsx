@@ -9,8 +9,8 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import type { Article, NewsItem, GalleryItem, Activity } from "../data/mock-data";
-import { articles as mockArticles, news as mockNews, gallery as mockGallery, activities as mockActivities } from "../data/mock-data";
+import type { Article, NoticeItem, GalleryItem, Activity } from "../data/mock-data";
+import { articles as mockArticles, notices as mockNotices, gallery as mockGallery, activities as mockActivities } from "../data/mock-data";
 import { apiFetch } from "../../utils/supabase-client";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { FadeInSection } from "../components/fade-in-section";
@@ -18,7 +18,7 @@ import { FadeInSection } from "../components/fade-in-section";
 export function Home() {
   const location = useLocation();
   const [articles, setArticles] = useState<Article[]>([]);
-  const [news, setNews] = useState<NewsItem[]>([]);
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,8 +27,8 @@ export function Home() {
   const [articleSearch, setArticleSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // News state
-  const [selectedNewsCategory, setSelectedNewsCategory] = useState<string | null>(null);
+  // Notice state
+  const [selectedNoticeCategory, setSelectedNoticeCategory] = useState<string | null>(null);
 
   // Gallery state
   const [selectedGalleryCategory, setSelectedGalleryCategory] = useState<string | null>(null);
@@ -48,12 +48,12 @@ export function Home() {
           aRes.json(), nRes.json(), gRes.json(), actRes.json(),
         ]);
         setArticles((aData.articles || []).length > 0 ? aData.articles : mockArticles);
-        setNews((nData.news || []).length > 0 ? nData.news : mockNews);
+        setNotices((nData.news || []).length > 0 ? nData.news : mockNotices);
         setGallery((gData.gallery || []).length > 0 ? gData.gallery : mockGallery);
         setActivities((actData.activities || []).length > 0 ? actData.activities : mockActivities);
       } catch {
         setArticles(mockArticles);
-        setNews(mockNews);
+        setNotices(mockNotices);
         setGallery(mockGallery);
         setActivities(mockActivities);
       } finally {
@@ -84,8 +84,13 @@ export function Home() {
     return matchSearch && matchTag;
   });
 
-  const newsCategories = Array.from(new Set(news.map((n) => n.category)));
-  const filteredNews = selectedNewsCategory ? news.filter((n) => n.category === selectedNewsCategory) : news;
+  const noticeCategories = Array.from(new Set(notices.map((n) => n.category)));
+  const sortedNotices = [...notices].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+  const filteredNotices = selectedNoticeCategory ? sortedNotices.filter((n) => n.category === selectedNoticeCategory) : sortedNotices;
 
   const galleryCategories = Array.from(new Set(gallery.map((g) => g.category)));
   const filteredGallery = selectedGalleryCategory ? gallery.filter((g) => g.category === selectedGalleryCategory) : gallery;
@@ -499,49 +504,78 @@ export function Home() {
 
       <hr className="border-border mx-6 sm:mx-12" />
 
-      {/* ==================== NEWS ==================== */}
-      <section id="news" className="py-28 max-w-[1200px] mx-auto px-6 sm:px-12">
+      {/* ==================== NOTICE ==================== */}
+      <section id="notice" className="py-28 max-w-[1200px] mx-auto px-6 sm:px-12">
         <FadeInSection>
-          <p className="text-xs font-bold tracking-[0.15em] uppercase text-primary mb-5">News</p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl mb-6">소식</h2>
+          <p className="text-xs font-bold tracking-[0.15em] uppercase text-primary mb-5">Notice</p>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl mb-6">공지사항</h2>
           <p className="text-base text-text-sub leading-relaxed max-w-2xl mb-10">
-            KHUX의 최신 소식과 활동 내역을 확인하세요.
+            KHUX의 공지사항과 주요 안내를 확인하세요.
           </p>
 
           <div className="mb-10">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-muted-foreground">Category:</span>
-              <button onClick={() => setSelectedNewsCategory(null)}
-                className={`text-sm px-4 py-2 rounded-full transition-all ${selectedNewsCategory === null ? "bg-primary text-primary-foreground font-semibold" : "bg-surface border border-border text-text-sub hover:border-white/20 hover:text-foreground"}`}>All</button>
-              {newsCategories.map((c) => (
-                <button key={c} onClick={() => setSelectedNewsCategory(c)}
-                  className={`text-sm px-4 py-2 rounded-full transition-all ${selectedNewsCategory === c ? "bg-primary text-primary-foreground font-semibold" : "bg-surface border border-border text-text-sub hover:border-white/20 hover:text-foreground"}`}>{c}</button>
+              <button onClick={() => setSelectedNoticeCategory(null)}
+                className={`text-sm px-4 py-2 rounded-full transition-all ${selectedNoticeCategory === null ? "bg-primary text-primary-foreground font-semibold" : "bg-surface border border-border text-text-sub hover:border-white/20 hover:text-foreground"}`}>All</button>
+              {noticeCategories.map((c) => (
+                <button key={c} onClick={() => setSelectedNoticeCategory(c)}
+                  className={`text-sm px-4 py-2 rounded-full transition-all ${selectedNoticeCategory === c ? "bg-primary text-primary-foreground font-semibold" : "bg-surface border border-border text-text-sub hover:border-white/20 hover:text-foreground"}`}>{c}</button>
               ))}
             </div>
           </div>
         </FadeInSection>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredNews.map((item) => {
-            const formattedDate = new Date(item.date).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+        {/* Notice List Table */}
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+          {/* Header */}
+          <div className="hidden sm:grid grid-cols-[auto_1fr_140px_100px] gap-4 px-6 py-3.5 bg-surface2 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="w-16 text-center">번호</span>
+            <span>제목</span>
+            <span className="text-center">카테고리</span>
+            <span className="text-center">날짜</span>
+          </div>
+
+          {/* Rows */}
+          {filteredNotices.map((item, idx) => {
+            const formattedDate = new Date(item.date).toLocaleDateString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit" });
+            const num = filteredNotices.length - idx;
             return (
               <FadeInSection key={item.id}>
-                <div className="bg-surface border border-border rounded-2xl overflow-hidden hover:-translate-y-1.5 hover:border-white/[0.15] hover:shadow-[0_24px_48px_rgba(0,0,0,0.3)] transition-all duration-500">
-                  {item.imageUrl && <img src={item.imageUrl} alt={item.title} className="w-full h-48 object-cover" />}
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full font-semibold">{item.category}</span>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="h-3 w-3" /><span>{formattedDate}</span></div>
-                    </div>
-                    <h3 className="text-lg font-bold mb-3">{item.title}</h3>
-                    <p className="text-sm text-text-sub leading-relaxed">{item.content}</p>
+                <div className={`group grid grid-cols-1 sm:grid-cols-[auto_1fr_140px_100px] gap-2 sm:gap-4 items-center px-6 py-4 border-b border-border last:border-b-0 hover:bg-surface2/60 transition-colors cursor-pointer ${item.pinned ? "bg-primary/[0.03]" : ""}`}>
+                  {/* Number / Pin */}
+                  <span className="hidden sm:flex w-16 justify-center">
+                    {item.pinned ? (
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">고정</span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{num}</span>
+                    )}
+                  </span>
+
+                  {/* Title */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    {item.pinned && <span className="sm:hidden text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded flex-shrink-0">고정</span>}
+                    <h3 className={`text-sm truncate group-hover:text-primary transition-colors ${item.pinned ? "font-bold" : "font-medium"}`}>{item.title}</h3>
                   </div>
+
+                  {/* Category */}
+                  <div className="flex sm:justify-center">
+                    <span className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full font-medium">{item.category}</span>
+                  </div>
+
+                  {/* Date */}
+                  <span className="text-xs text-muted-foreground sm:text-center">{formattedDate}</span>
                 </div>
               </FadeInSection>
             );
           })}
+
+          {filteredNotices.length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground">등록된 공지사항이 없습니다.</p>
+            </div>
+          )}
         </div>
-        {filteredNews.length === 0 && <div className="text-center py-20"><p className="text-muted-foreground">해당 카테고리의 소식이 없습니다.</p></div>}
       </section>
 
       <hr className="border-border mx-6 sm:mx-12" />
