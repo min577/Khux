@@ -22,6 +22,7 @@ export function Home() {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recruitOpen, setRecruitOpen] = useState(false);
 
   // Articles state
   const [articleSearch, setArticleSearch] = useState("");
@@ -51,6 +52,10 @@ export function Home() {
         setNotices((nData.news || []).length > 0 ? nData.news : mockNotices);
         setGallery((gData.gallery || []).length > 0 ? gData.gallery : mockGallery);
         setActivities((actData.activities || []).length > 0 ? actData.activities : mockActivities);
+        // Check recruit status
+        const rRes = await apiFetch("/recruit-config");
+        const rData = await rRes.json();
+        if (rData.config) setRecruitOpen(rData.config.isOpen ?? false);
       } catch {
         setArticles(mockArticles);
         setNotices(mockNotices);
@@ -578,26 +583,30 @@ export function Home() {
         </div>
       </section>
 
-      <hr className="border-border mx-6 sm:mx-12" />
+      {recruitOpen && (
+        <>
+          <hr className="border-border mx-6 sm:mx-12" />
 
-      {/* ==================== CTA ==================== */}
-      <section className="py-28">
-        <FadeInSection>
-          <div className="max-w-[1200px] mx-auto px-6 sm:px-12 text-center">
-            <p className="text-xs font-bold tracking-[0.15em] uppercase text-primary mb-5">Join Us</p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl mb-6">KHUX와 함께 성장하세요</h2>
-            <p className="text-base text-text-sub max-w-2xl mx-auto leading-relaxed mb-10">
-              UX/UI 디자인에 관심있는 모든 분들을 환영합니다.<br />함께 배우고, 연구하고, 성장하는 커뮤니티에 참여하세요.
-            </p>
-            <Link
-              to="/recruit"
-              className="inline-flex items-center justify-center px-8 py-3.5 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors text-sm font-bold"
-            >
-              4기 지원하기 <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </div>
-        </FadeInSection>
-      </section>
+          {/* ==================== CTA ==================== */}
+          <section className="py-28">
+            <FadeInSection>
+              <div className="max-w-[1200px] mx-auto px-6 sm:px-12 text-center">
+                <p className="text-xs font-bold tracking-[0.15em] uppercase text-primary mb-5">Join Us</p>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl mb-6">KHUX와 함께 성장하세요</h2>
+                <p className="text-base text-text-sub max-w-2xl mx-auto leading-relaxed mb-10">
+                  UX/UI 디자인에 관심있는 모든 분들을 환영합니다.<br />함께 배우고, 연구하고, 성장하는 커뮤니티에 참여하세요.
+                </p>
+                <Link
+                  to="/recruit"
+                  className="inline-flex items-center justify-center px-8 py-3.5 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors text-sm font-bold"
+                >
+                  4기 지원하기 <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
+            </FadeInSection>
+          </section>
+        </>
+      )}
     </div>
   );
 }
