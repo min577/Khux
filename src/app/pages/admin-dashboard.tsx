@@ -96,6 +96,16 @@ export function AdminDashboard() {
     }
   }, [authenticated]);
 
+  // Check review PIN status when review tab is selected
+  useEffect(() => {
+    if (activeTab === "review" && !reviewUnlocked && authenticated) {
+      apiFetchAuth("/review-pin/status")
+        .then(r => r.json())
+        .then(d => setReviewHasPin(d.hasPin ?? false))
+        .catch(() => setReviewHasPin(false));
+    }
+  }, [activeTab, authenticated]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -944,21 +954,17 @@ export function AdminDashboard() {
         )}
 
         {/* Review Management Tab - PIN Gate */}
-        {activeTab === "review" && !reviewUnlocked && (() => {
-          // Check PIN status on first render
-          if (reviewHasPin === null) {
-            apiFetchAuth("/review-pin/status").then(r => r.json()).then(d => setReviewHasPin(d.hasPin ?? false)).catch(() => setReviewHasPin(false));
-          }
+        {activeTab === "review" && !reviewUnlocked && (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-full max-w-sm text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
+                <Lock className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">피어리뷰 접근 제한</h2>
 
-          return (
-            <div className="flex items-center justify-center py-20">
-              <div className="w-full max-w-sm text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-                  <Lock className="h-8 w-8 text-primary" />
-                </div>
-                <h2 className="text-xl font-bold mb-2">피어리뷰 접근 제한</h2>
-
-                {reviewHasPin === false ? (
+              {reviewHasPin === null ? (
+                <p className="text-sm text-muted-foreground">확인 중...</p>
+              ) : reviewHasPin === false ? (
                   <>
                     <p className="text-sm text-muted-foreground mb-6">PIN이 아직 설정되지 않았습니다. 최초 PIN을 설정하세요.</p>
                     <form onSubmit={async (e) => {
@@ -1021,10 +1027,9 @@ export function AdminDashboard() {
                     </form>
                   </>
                 )}
-              </div>
             </div>
-          );
-        })()}
+          </div>
+        )}
 
         {activeTab === "review" && reviewUnlocked && (
           <div className="space-y-6">
