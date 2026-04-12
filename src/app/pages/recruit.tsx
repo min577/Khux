@@ -81,6 +81,27 @@ export function Recruit() {
   const visibleBasicFields = config.basicFields.filter((f) => f.visible);
   const visibleQuestions = config.questions.filter((q) => q.visible);
 
+  if (!config.isOpen) {
+    return (
+      <div className="w-full py-20 sm:py-32">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-lg mx-auto text-center">
+            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+              <Calendar className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4">모집 기간이 아닙니다</h1>
+            <p className="text-muted-foreground text-lg mb-2">
+              현재 {config.generation} 모집이 마감되었습니다.
+            </p>
+            <p className="text-muted-foreground">
+              다음 모집 공고는 KHUX 공지사항을 통해 안내될 예정입니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full py-12 sm:py-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

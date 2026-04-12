@@ -1,11 +1,22 @@
 import { Outlet, Link, useLocation } from "react-router";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { apiFetch } from "../../utils/supabase-client";
 
 export function Layout() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("");
+  const [recruitOpen, setRecruitOpen] = useState(false);
+
+  useEffect(() => {
+    apiFetch("/recruit-config")
+      .then((r) => r.json())
+      .then(({ config }) => {
+        if (config) setRecruitOpen(config.isOpen ?? false);
+      })
+      .catch(() => {});
+  }, []);
 
   const isHome = location.pathname === "/";
 
@@ -97,16 +108,18 @@ export function Layout() {
                   {item.label}
                 </button>
               ))}
-              <Link
-                to="/recruit"
-                className={`text-sm font-medium transition-colors ${
-                  location.pathname === "/recruit"
-                    ? "text-foreground"
-                    : "text-text-sub hover:text-foreground"
-                }`}
-              >
-                Recruit
-              </Link>
+              {recruitOpen && (
+                <Link
+                  to="/recruit"
+                  className={`text-sm font-medium transition-colors ${
+                    location.pathname === "/recruit"
+                      ? "text-foreground"
+                      : "text-text-sub hover:text-foreground"
+                  }`}
+                >
+                  Recruit
+                </Link>
+              )}
               <Link
                 to="/review/login"
                 className="text-sm font-medium px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
@@ -145,17 +158,19 @@ export function Layout() {
                   {item.label}
                 </button>
               ))}
-              <Link
-                to="/recruit"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm ${
-                  location.pathname === "/recruit"
-                    ? "text-foreground bg-surface2"
-                    : "text-text-sub hover:text-foreground hover:bg-surface2"
-                }`}
-              >
-                Recruit
-              </Link>
+              {recruitOpen && (
+                <Link
+                  to="/recruit"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm ${
+                    location.pathname === "/recruit"
+                      ? "text-foreground bg-surface2"
+                      : "text-text-sub hover:text-foreground hover:bg-surface2"
+                  }`}
+                >
+                  Recruit
+                </Link>
+              )}
               <Link
                 to="/review/login"
                 onClick={() => setMobileMenuOpen(false)}
