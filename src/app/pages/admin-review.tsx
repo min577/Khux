@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { ArrowLeft, Download, StopCircle, RefreshCw, Check, X, Play } from "lucide-react";
+import { ArrowLeft, Download, StopCircle, RefreshCw, Check, X, Play, Lock } from "lucide-react";
 import { supabase, apiFetchAuth, API_BASE_URL } from "../../utils/supabase-client";
 import { publicAnonKey } from "/utils/supabase/info";
 
@@ -43,12 +43,61 @@ export function AdminReview() {
   const [starting, setStarting] = useState(false);
   const [startResult, setStartResult] = useState<string | null>(null);
 
+  // PIN gate
+  const [unlocked, setUnlocked] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) navigate("/admin/login");
-      else fetchSessions();
     });
   }, [navigate]);
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError("");
+    try {
+      const res = await apiFetchAuth("/review-pin/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setUnlocked(true);
+        setPin("");
+        fetchSessions();
+      } else {
+        setPinError("PIN이 올바르지 않습니다.");
+      }
+    } catch {
+      setPinError("인증에 실패했습니다.");
+    }
+  };
+
+  if (!unlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Link to="/admin/dashboard" className="fixed top-6 left-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" /> 대시보드
+        </Link>
+        <div className="w-full max-w-sm text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
+            <Lock className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">피어리뷰 접근 제한</h1>
+          <p className="text-sm text-muted-foreground mb-6">최고 관리자만 접근할 수 있습니다. PIN을 입력하세요.</p>
+          <form onSubmit={handlePinSubmit} className="space-y-4">
+            <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="PIN 입력"
+              className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" autoFocus />
+            {pinError && <p className="text-sm text-destructive">{pinError}</p>}
+            <button type="submit" disabled={!pin} className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">확인</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   async function fetchSessions() {
     try {

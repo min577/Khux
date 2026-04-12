@@ -680,6 +680,59 @@ app.put("/make-server-d0140d55/recruit-config", async (c) => {
   }
 });
 
+// ============ Review PIN ============
+
+// Get review PIN (protected - only returns whether PIN is set)
+app.get("/make-server-d0140d55/review-pin/status", async (c) => {
+  try {
+    const accessToken = c.req.header('x-user-token');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
+
+    const pin = await kv.get("review:pin");
+    return c.json({ hasPin: !!pin });
+  } catch (error) {
+    console.log(`Error checking review pin: ${error}`);
+    return c.json({ error: "Failed to check review pin" }, 500);
+  }
+});
+
+// Set review PIN (protected)
+app.put("/make-server-d0140d55/review-pin", async (c) => {
+  try {
+    const accessToken = c.req.header('x-user-token');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
+
+    const { pin } = await c.req.json();
+    if (!pin || pin.length < 4) return c.json({ error: "PIN must be at least 4 characters" }, 400);
+
+    await kv.set("review:pin", pin);
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`Error setting review pin: ${error}`);
+    return c.json({ error: "Failed to set review pin" }, 500);
+  }
+});
+
+// Verify review PIN (protected)
+app.post("/make-server-d0140d55/review-pin/verify", async (c) => {
+  try {
+    const accessToken = c.req.header('x-user-token');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (!user || authError) return c.json({ error: "Unauthorized" }, 401);
+
+    const { pin } = await c.req.json();
+    const storedPin = await kv.get("review:pin");
+
+    if (!storedPin) return c.json({ error: "No PIN set" }, 404);
+    return c.json({ valid: pin === storedPin });
+  } catch (error) {
+    console.log(`Error verifying review pin: ${error}`);
+    return c.json({ error: "Failed to verify review pin" }, 500);
+  }
+});
+
 // ============ Initialize Sample Data ============
 // This endpoint populates the database with sample data (one-time use)
 app.post("/make-server-d0140d55/init-sample-data", async (c) => {

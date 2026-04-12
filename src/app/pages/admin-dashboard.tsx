@@ -20,7 +20,8 @@ import {
   Bell,
   Check,
   RefreshCw,
-  UserPlus
+  UserPlus,
+  Lock
 } from "lucide-react";
 import { supabase, apiFetch, apiFetchAuth, uploadImage, API_BASE_URL } from "../../utils/supabase-client";
 import { publicAnonKey } from "/utils/supabase/info";
@@ -46,6 +47,15 @@ export function AdminDashboard() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Review access control
+  const [reviewUnlocked, setReviewUnlocked] = useState(false);
+  const [reviewPin, setReviewPin] = useState("");
+  const [reviewPinError, setReviewPinError] = useState("");
+  const [reviewHasPin, setReviewHasPin] = useState<boolean | null>(null);
+  const [showPinChange, setShowPinChange] = useState(false);
+  const [newPin, setNewPin] = useState("");
+  const [newPinConfirm, setNewPinConfirm] = useState("");
 
   // Review management state
   const [reviewSessions, setReviewSessions] = useState<any[]>([]);
@@ -835,7 +845,16 @@ export function AdminDashboard() {
               ]).map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
-                  onClick={() => { setActiveTab(key); setSearchQuery(""); if (key === "review") fetchReviewSessions(); }}
+                  onClick={() => {
+                    if (key === "review" && !reviewUnlocked) {
+                      setActiveTab(key);
+                      setSearchQuery("");
+                      return;
+                    }
+                    setActiveTab(key);
+                    setSearchQuery("");
+                    if (key === "review") fetchReviewSessions();
+                  }}
                   className={`pb-4 px-2 font-medium transition-colors relative whitespace-nowrap ${
                     activeTab === key
                       ? "text-foreground"
@@ -924,22 +943,147 @@ export function AdminDashboard() {
           </div>
         )}
 
-        {/* Review Management Tab */}
-        {activeTab === "review" && (
+        {/* Review Management Tab - PIN Gate */}
+        {activeTab === "review" && !reviewUnlocked && (() => {
+          // Check PIN status on first render
+          if (reviewHasPin === null) {
+            apiFetchAuth("/review-pin/status").then(r => r.json()).then(d => setReviewHasPin(d.hasPin ?? false)).catch(() => setReviewHasPin(false));
+          }
+
+          return (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-full max-w-sm text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
+                  <Lock className="h-8 w-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">피어리뷰 접근 제한</h2>
+
+                {reviewHasPin === false ? (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-6">PIN이 아직 설정되지 않았습니다. 최초 PIN을 설정하세요.</p>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      setReviewPinError("");
+                      if (reviewPin.length < 4) { setReviewPinError("PIN은 4자리 이상이어야 합니다."); return; }
+                      if (reviewPin !== newPinConfirm) { setReviewPinError("PIN이 일치하지 않습니다."); return; }
+                      try {
+                        const res = await apiFetchAuth("/review-pin", {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ pin: reviewPin }),
+                        });
+                        if (res.ok) {
+                          setReviewUnlocked(true);
+                          setReviewPin("");
+                          setNewPinConfirm("");
+                          setReviewHasPin(true);
+                          fetchReviewSessions();
+                          alert("PIN이 설정되었습니다!");
+                        }
+                      } catch { setReviewPinError("PIN 설정에 실패했습니다."); }
+                    }} className="space-y-3">
+                      <input type="password" value={reviewPin} onChange={(e) => setReviewPin(e.target.value)} placeholder="새 PIN (4자리 이상)"
+                        className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" autoFocus />
+                      <input type="password" value={newPinConfirm} onChange={(e) => setNewPinConfirm(e.target.value)} placeholder="PIN 확인"
+                        className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                      {reviewPinError && <p className="text-sm text-destructive">{reviewPinError}</p>}
+                      <button type="submit" disabled={!reviewPin || !newPinConfirm}
+                        className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">PIN 설정</button>
+                    </form>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-6">최고 관리자만 접근할 수 있습니다. PIN을 입력하세요.</p>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      setReviewPinError("");
+                      try {
+                        const res = await apiFetchAuth("/review-pin/verify", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ pin: reviewPin }),
+                        });
+                        const data = await res.json();
+                        if (data.valid) {
+                          setReviewUnlocked(true);
+                          setReviewPin("");
+                          fetchReviewSessions();
+                        } else {
+                          setReviewPinError("PIN이 올바르지 않습니다.");
+                        }
+                      } catch { setReviewPinError("인증에 실패했습니다."); }
+                    }} className="space-y-4">
+                      <input type="password" value={reviewPin} onChange={(e) => setReviewPin(e.target.value)} placeholder="PIN 입력"
+                        className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" autoFocus />
+                      {reviewPinError && <p className="text-sm text-destructive">{reviewPinError}</p>}
+                      <button type="submit" disabled={!reviewPin}
+                        className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">확인</button>
+                    </form>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {activeTab === "review" && reviewUnlocked && (
           <div className="space-y-6">
             {/* Header with create button */}
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">피어리뷰 세션</h2>
-              {!showStartForm && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowStartForm(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                  onClick={() => setShowPinChange(!showPinChange)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
                 >
-                  <PlusCircle className="w-4 h-4" />
-                  새 피어리뷰 생성
+                  <Lock className="w-3.5 h-3.5" />
+                  PIN 변경
                 </button>
-              )}
+                {!showStartForm && (
+                  <button
+                    onClick={() => setShowStartForm(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    새 피어리뷰 생성
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* PIN Change Form */}
+            {showPinChange && (
+              <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+                <h3 className="font-semibold text-sm">PIN 변경</h3>
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (newPin.length < 4) { alert("PIN은 4자리 이상이어야 합니다."); return; }
+                  if (newPin !== newPinConfirm) { alert("PIN이 일치하지 않습니다."); return; }
+                  try {
+                    const res = await apiFetchAuth("/review-pin", {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ pin: newPin }),
+                    });
+                    if (res.ok) {
+                      alert("PIN이 변경되었습니다!");
+                      setNewPin("");
+                      setNewPinConfirm("");
+                      setShowPinChange(false);
+                    }
+                  } catch { alert("PIN 변경에 실패했습니다."); }
+                }} className="flex gap-2">
+                  <input type="password" value={newPin} onChange={(e) => setNewPin(e.target.value)} placeholder="새 PIN (4자리 이상)"
+                    className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                  <input type="password" value={newPinConfirm} onChange={(e) => setNewPinConfirm(e.target.value)} placeholder="PIN 확인"
+                    className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                  <button type="submit" disabled={!newPin || !newPinConfirm}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">변경</button>
+                  <button type="button" onClick={() => { setShowPinChange(false); setNewPin(""); setNewPinConfirm(""); }}
+                    className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">취소</button>
+                </form>
+              </div>
+            )}
 
             {/* Start form (inline) */}
             {showStartForm && (
