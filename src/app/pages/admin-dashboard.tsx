@@ -962,71 +962,66 @@ export function AdminDashboard() {
               </div>
               <h2 className="text-xl font-bold mb-2">피어리뷰 접근 제한</h2>
 
-              {reviewHasPin === null ? (
-                <p className="text-sm text-muted-foreground">확인 중...</p>
-              ) : reviewHasPin === false ? (
-                  <>
-                    <p className="text-sm text-muted-foreground mb-6">PIN이 아직 설정되지 않았습니다. 최초 PIN을 설정하세요.</p>
-                    <form onSubmit={async (e) => {
-                      e.preventDefault();
-                      setReviewPinError("");
-                      if (reviewPin.length < 4) { setReviewPinError("PIN은 4자리 이상이어야 합니다."); return; }
-                      if (reviewPin !== newPinConfirm) { setReviewPinError("PIN이 일치하지 않습니다."); return; }
-                      try {
-                        const res = await apiFetchAuth("/review-pin", {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ pin: reviewPin }),
-                        });
-                        if (res.ok) {
-                          setReviewUnlocked(true);
-                          setReviewPin("");
-                          setNewPinConfirm("");
-                          setReviewHasPin(true);
-                          fetchReviewSessions();
-                          alert("PIN이 설정되었습니다!");
-                        }
-                      } catch { setReviewPinError("PIN 설정에 실패했습니다."); }
-                    }} className="space-y-3">
-                      <input type="password" value={reviewPin} onChange={(e) => setReviewPin(e.target.value)} placeholder="새 PIN (4자리 이상)"
-                        className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" autoFocus />
-                      <input type="password" value={newPinConfirm} onChange={(e) => setNewPinConfirm(e.target.value)} placeholder="PIN 확인"
-                        className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
-                      {reviewPinError && <p className="text-sm text-destructive">{reviewPinError}</p>}
-                      <button type="submit" disabled={!reviewPin || !newPinConfirm}
-                        className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">PIN 설정</button>
-                    </form>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground mb-6">최고 관리자만 접근할 수 있습니다. PIN을 입력하세요.</p>
-                    <form onSubmit={async (e) => {
-                      e.preventDefault();
-                      setReviewPinError("");
-                      try {
-                        const res = await apiFetchAuth("/review-pin/verify", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ pin: reviewPin }),
-                        });
-                        const data = await res.json();
-                        if (data.valid) {
-                          setReviewUnlocked(true);
-                          setReviewPin("");
-                          fetchReviewSessions();
-                        } else {
-                          setReviewPinError("PIN이 올바르지 않습니다.");
-                        }
-                      } catch { setReviewPinError("인증에 실패했습니다."); }
-                    }} className="space-y-4">
-                      <input type="password" value={reviewPin} onChange={(e) => setReviewPin(e.target.value)} placeholder="PIN 입력"
-                        className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" autoFocus />
-                      {reviewPinError && <p className="text-sm text-destructive">{reviewPinError}</p>}
-                      <button type="submit" disabled={!reviewPin}
-                        className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">확인</button>
-                    </form>
-                  </>
+              <p className="text-sm text-muted-foreground mb-6">
+                {reviewHasPin === false
+                  ? "PIN이 아직 설정되지 않았습니다. 최초 PIN을 설정하세요."
+                  : "최고 관리자만 접근할 수 있습니다. PIN을 입력하세요."}
+              </p>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setReviewPinError("");
+
+                if (reviewHasPin === false) {
+                  // PIN 설정 모드
+                  if (reviewPin.length < 4) { setReviewPinError("PIN은 4자리 이상이어야 합니다."); return; }
+                  if (reviewPin !== newPinConfirm) { setReviewPinError("PIN이 일치하지 않습니다."); return; }
+                  try {
+                    const res = await apiFetchAuth("/review-pin", {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ pin: reviewPin }),
+                    });
+                    if (res.ok) {
+                      setReviewUnlocked(true);
+                      setReviewPin("");
+                      setNewPinConfirm("");
+                      setReviewHasPin(true);
+                      fetchReviewSessions();
+                      alert("PIN이 설정되었습니다!");
+                    } else { setReviewPinError("PIN 설정에 실패했습니다."); }
+                  } catch { setReviewPinError("PIN 설정에 실패했습니다."); }
+                } else {
+                  // PIN 확인 모드
+                  try {
+                    const res = await apiFetchAuth("/review-pin/verify", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ pin: reviewPin }),
+                    });
+                    const data = await res.json();
+                    if (data.valid) {
+                      setReviewUnlocked(true);
+                      setReviewPin("");
+                      fetchReviewSessions();
+                    } else {
+                      setReviewPinError("PIN이 올바르지 않습니다.");
+                    }
+                  } catch { setReviewPinError("인증에 실패했습니다."); }
+                }
+              }} className="space-y-3">
+                <input type="password" value={reviewPin} onChange={(e) => setReviewPin(e.target.value)}
+                  placeholder={reviewHasPin === false ? "새 PIN (4자리 이상)" : "PIN 입력"}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" autoFocus />
+                {reviewHasPin === false && (
+                  <input type="password" value={newPinConfirm} onChange={(e) => setNewPinConfirm(e.target.value)} placeholder="PIN 확인"
+                    className="w-full px-4 py-3 bg-background border border-border rounded-lg text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                 )}
+                {reviewPinError && <p className="text-sm text-destructive">{reviewPinError}</p>}
+                <button type="submit" disabled={reviewHasPin === false ? (!reviewPin || !newPinConfirm) : !reviewPin}
+                  className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+                  {reviewHasPin === false ? "PIN 설정" : "확인"}
+                </button>
+              </form>
             </div>
           </div>
         )}
