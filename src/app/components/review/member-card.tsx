@@ -15,7 +15,7 @@ export function MemberCard({ name, isLeader, completed, onClick }: MemberCardPro
     >
       <div
         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          completed ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"
+          completed ? "bg-green-100 text-green-600" : "bg-muted text-foreground/60"
         }`}
       >
         {completed ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
@@ -29,11 +29,11 @@ export function MemberCard({ name, isLeader, completed, onClick }: MemberCardPro
             </span>
           )}
         </div>
-        <span className={`text-xs ${completed ? "text-green-600" : "text-muted-foreground"}`}>
+        <span className={`text-xs ${completed ? "text-green-600" : "text-foreground/60"}`}>
           {completed ? "작성 완료" : "미작성"}
         </span>
       </div>
-      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <ChevronRight className="w-4 h-4 text-foreground/60 flex-shrink-0" />
     </button>
   );
 }

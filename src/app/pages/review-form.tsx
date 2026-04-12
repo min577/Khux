@@ -73,7 +73,7 @@ export function ReviewForm() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
-        <div className="animate-pulse text-muted-foreground">로딩 중...</div>
+        <div className="animate-pulse text-foreground/60">로딩 중...</div>
       </div>
     );
   }
@@ -135,7 +135,7 @@ export function ReviewForm() {
             <Check className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-lg font-medium">제출 완료!</p>
-          <p className="text-sm text-muted-foreground mt-1">대시보드로 이동합니다...</p>
+          <p className="text-sm text-foreground/60 mt-1">대시보드로 이동합니다...</p>
         </div>
       </div>
     );
@@ -148,7 +148,7 @@ export function ReviewForm() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate("/review")}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-foreground/60 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             돌아가기
@@ -157,7 +157,7 @@ export function ReviewForm() {
             <p className="font-medium">
               {type === "leader" ? "리더 평가" : "공통 피어리뷰"}
             </p>
-            <p className="text-sm text-muted-foreground">{session.title}</p>
+            <p className="text-sm text-foreground/60">{session.title}</p>
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ export function ReviewForm() {
       <div className="max-w-4xl mx-auto px-6 lg:px-8 py-8 space-y-8">
         {/* Target Info */}
         <div className="bg-card border border-border rounded-xl p-6 lg:p-8">
-          <p className="text-sm text-muted-foreground mb-2">평가 대상</p>
+          <p className="text-sm text-foreground/60 mb-2">평가 대상</p>
           <div className="flex items-center gap-3">
             <p className="text-2xl font-bold">{target?.display_name || "Unknown"}</p>
             {target?.is_leader && (
@@ -204,7 +204,7 @@ export function ReviewForm() {
               comment.length > 0 && comment.length < 50 ? "border-destructive" : "border-border"
             }`}
           />
-          <p className={`text-sm mt-2 ${comment.length >= 50 ? "text-green-600" : "text-muted-foreground"}`}>
+          <p className={`text-sm mt-2 ${comment.length >= 50 ? "text-green-600" : "text-foreground/60"}`}>
             {comment.length}/50자
           </p>
         </div>

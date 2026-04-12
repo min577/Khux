@@ -91,7 +91,7 @@ export function ReviewDashboard() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
-        <div className="animate-pulse text-muted-foreground">로딩 중...</div>
+        <div className="animate-pulse text-foreground/60">로딩 중...</div>
       </div>
     );
   }
@@ -116,7 +116,7 @@ export function ReviewDashboard() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-foreground/60 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             메인
@@ -124,11 +124,11 @@ export function ReviewDashboard() {
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-medium">{user.display_name}</p>
-              <p className="text-xs text-muted-foreground">{user.team_name}</p>
+              <p className="text-xs text-foreground/60">{user.team_name}</p>
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              className="p-2 text-foreground/60 hover:text-foreground transition-colors"
               title="로그아웃"
             >
               <LogOut className="w-4 h-4" />
@@ -147,7 +147,7 @@ export function ReviewDashboard() {
         {/* Session selector when multiple sessions exist */}
         {!session && mySessions.length > 1 && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">진행 중인 피어리뷰를 선택하세요.</p>
+            <p className="text-sm text-foreground/60">진행 중인 피어리뷰를 선택하세요.</p>
             {mySessions.map((sess) => (
               <button
                 key={sess.id}
@@ -156,9 +156,9 @@ export function ReviewDashboard() {
               >
                 <div>
                   <p className="font-medium">{sess.title}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{sess.team_name} — {sess.members?.length || 0}명</p>
+                  <p className="text-sm text-foreground/60 mt-0.5">{sess.team_name} — {sess.members?.length || 0}명</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                <ChevronRight className="w-5 h-5 text-foreground/60" />
               </button>
             ))}
           </div>
@@ -166,7 +166,7 @@ export function ReviewDashboard() {
 
         {!session && mySessions.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-muted-foreground">현재 진행 중인 피어리뷰가 없습니다.</p>
+            <p className="text-foreground/60">현재 진행 중인 피어리뷰가 없습니다.</p>
           </div>
         )}
 
@@ -177,12 +177,12 @@ export function ReviewDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-bold">{session.title}</h1>
-                  <p className="text-muted-foreground mt-1">{session.team_name} 팀</p>
+                  <p className="text-foreground/60 mt-1">{session.team_name} 팀</p>
                 </div>
                 {mySessions.length > 1 && (
                   <button
                     onClick={() => { setSession(null); setMyReviews([]); setMyLeaderReviews([]); }}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-xs text-foreground/60 hover:text-foreground transition-colors"
                   >
                     다른 리뷰 선택
                   </button>

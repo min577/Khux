@@ -11,7 +11,7 @@ export function ReviewProgress({ label, done, total }: ReviewProgressProps) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
+        <span className="text-foreground/60">{label}</span>
         <span className={`font-medium ${isComplete ? "text-green-600" : ""}`}>
           {done}/{total}
         </span>

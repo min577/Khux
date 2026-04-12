@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation, Link } from "react-router";
 import {
   ArrowRight,
@@ -7,8 +7,10 @@ import {
   User,
   Calendar,
   ChevronRight,
+  ChevronLeft,
   X,
 } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
 import type { Article, NoticeItem, GalleryItem, Activity } from "../data/mock-data";
 import { articles as mockArticles, notices as mockNotices, gallery as mockGallery, activities as mockActivities } from "../data/mock-data";
 import { apiFetch } from "../../utils/supabase-client";
@@ -34,6 +36,8 @@ export function Home() {
   // Gallery state
   const [selectedGalleryCategory, setSelectedGalleryCategory] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" });
 
   // Activities state
   const [selectedActivityCategory, setSelectedActivityCategory] = useState<string | null>(null);
@@ -80,6 +84,25 @@ export function Home() {
       }, 100);
     }
   }, [location.hash]);
+
+  // Gallery carousel auto-slide
+  useEffect(() => {
+    if (!emblaApi) return;
+    const interval = setInterval(() => emblaApi.scrollNext(), 4000);
+    return () => clearInterval(interval);
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setGalleryIndex(emblaApi.selectedScrollSnap());
+    emblaApi.on("select", onSelect);
+    onSelect();
+    return () => { emblaApi.off("select", onSelect); };
+  }, [emblaApi]);
+
+  const scrollGalleryPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollGalleryNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+  const scrollGalleryTo = useCallback((i: number) => emblaApi?.scrollTo(i), [emblaApi]);
 
   // Filtered data
   const allTags = Array.from(new Set(articles.flatMap((a) => a.tags || [])));
@@ -466,24 +489,67 @@ export function Home() {
           </div>
         </FadeInSection>
 
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-          {filteredGallery.map((item) => (
-            <FadeInSection key={item.id}>
-              <div className="break-inside-avoid group cursor-pointer" onClick={() => setSelectedImage(item)}>
-                <div className="relative overflow-hidden rounded-2xl border border-border bg-surface">
-                  <img src={item.imageUrl} alt={item.title} className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                    <span className="inline-block text-xs px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white mb-2">{item.category}</span>
-                    <h3 className="text-white font-bold">{item.title}</h3>
-                    <p className="text-white/80 text-sm mt-1">{item.description}</p>
-                  </div>
+        {filteredGallery.length === 0 ? (
+          <div className="text-center py-20"><p className="text-muted-foreground">해당 카테고리의 사진이 없습니다.</p></div>
+        ) : (
+          <FadeInSection>
+            {/* Carousel */}
+            <div className="relative group">
+              <button onClick={scrollGalleryPrev}
+                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors opacity-0 group-hover:opacity-100"
+                aria-label="이전">
+                <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+              <button onClick={scrollGalleryNext}
+                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors opacity-0 group-hover:opacity-100"
+                aria-label="다음">
+                <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+
+              <div className="overflow-hidden rounded-2xl" ref={emblaRef}>
+                <div className="flex">
+                  {filteredGallery.map((item) => (
+                    <div key={item.id} className="flex-[0_0_100%] min-w-0 px-1">
+                      <div className="relative cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface" onClick={() => setSelectedImage(item)}>
+                        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                          <img src={item.imageUrl} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy" />
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                          <span className="inline-block text-xs px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white mb-3">{item.category}</span>
+                          <h3 className="text-white text-xl sm:text-2xl font-semibold">{item.title}</h3>
+                          <p className="text-white/80 text-sm sm:text-base mt-2 line-clamp-2">{item.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </FadeInSection>
-          ))}
-        </div>
-        {filteredGallery.length === 0 && <div className="text-center py-20"><p className="text-muted-foreground">해당 카테고리의 사진이 없습니다.</p></div>}
+
+              {/* Dots */}
+              <div className="flex justify-center gap-2 mt-6">
+                {filteredGallery.map((_, i) => (
+                  <button key={i} onClick={() => scrollGalleryTo(i)}
+                    className={`rounded-full transition-all duration-300 ${i === galleryIndex ? "w-8 h-2 bg-primary" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+                    aria-label={`슬라이드 ${i + 1}`} />
+                ))}
+              </div>
+            </div>
+
+            {/* Thumbnail Grid */}
+            <div className="mt-10">
+              <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+                {filteredGallery.map((item, i) => (
+                  <div key={item.id}
+                    className={`relative cursor-pointer overflow-hidden rounded-lg border-2 transition-all duration-200 aspect-square ${i === galleryIndex ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-muted-foreground/30"}`}
+                    onClick={() => { scrollGalleryTo(i); setSelectedImage(item); }}>
+                    <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeInSection>
+        )}
 
         {/* Lightbox */}
         {selectedImage && (

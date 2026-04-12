@@ -20,7 +20,7 @@ export function ScoreSelector({ name, description, value, onChange }: ScoreSelec
     <div className="space-y-4">
       <div>
         <h4 className="font-semibold">{name}</h4>
-        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        <p className="text-sm text-foreground/60 mt-1">{description}</p>
       </div>
       <RadioGroup
         value={value?.toString() || ""}
@@ -40,7 +40,7 @@ export function ScoreSelector({ name, description, value, onChange }: ScoreSelec
             <span className={`text-2xl font-bold ${value === score ? "text-primary" : ""}`}>
               {score}
             </span>
-            <span className={`text-xs ${value === score ? "text-primary font-medium" : "text-muted-foreground"}`}>
+            <span className={`text-xs ${value === score ? "text-primary font-medium" : "text-foreground/60"}`}>
               {SCORE_LABELS[score]}
             </span>
           </label>
