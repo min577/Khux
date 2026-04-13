@@ -313,7 +313,6 @@ export function Home() {
                   {/* Top */}
                   <div className="relative p-9 pb-7 bg-surface overflow-hidden">
                     <div className={`absolute -bottom-[60px] -right-[60px] w-40 h-40 rounded-full ${colors.glow} transition-all duration-500 group-hover:scale-125`} />
-                    <span className="absolute top-8 right-8 text-4xl">{team.icon}</span>
                     <span className={`inline-block text-xs font-bold tracking-[0.1em] uppercase ${colors.badge} bg-white/5 border border-white/[0.08] px-3 py-1 rounded-full mb-5`}>
                       Team {String(i + 1).padStart(2, '0')}
                     </span>
