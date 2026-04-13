@@ -32,7 +32,7 @@ export function Home() {
 
   // Notice state
   const [selectedNoticeCategory, setSelectedNoticeCategory] = useState<string | null>(null);
-  const [expandedNoticeId, setExpandedNoticeId] = useState<string | null>(null);
+  const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
 
   // Gallery state
   const [selectedGalleryCategory, setSelectedGalleryCategory] = useState<string | null>(null);
@@ -611,57 +611,35 @@ export function Home() {
           {/* Rows */}
           {filteredNotices.map((item, idx) => {
             const formattedDate = new Date(item.date).toLocaleDateString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit" });
-            const fullDate = new Date(item.date).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
             const num = filteredNotices.length - idx;
-            const isExpanded = expandedNoticeId === item.id;
             return (
               <FadeInSection key={item.id}>
-                <div className={`border-b border-border last:border-b-0 ${item.pinned ? "bg-primary/[0.03]" : ""}`}>
-                  {/* Row */}
-                  <div
-                    className="group grid grid-cols-1 sm:grid-cols-[auto_1fr_140px_100px] gap-2 sm:gap-4 items-center px-6 py-4 hover:bg-surface2/60 transition-colors cursor-pointer"
-                    onClick={() => setExpandedNoticeId(isExpanded ? null : item.id)}
-                  >
-                    {/* Number / Pin */}
-                    <span className="hidden sm:flex w-16 justify-center">
-                      {item.pinned ? (
-                        <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">고정</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">{num}</span>
-                      )}
-                    </span>
+                <div
+                  className={`group grid grid-cols-1 sm:grid-cols-[auto_1fr_140px_100px] gap-2 sm:gap-4 items-center px-6 py-4 border-b border-border last:border-b-0 hover:bg-surface2/60 transition-colors cursor-pointer ${item.pinned ? "bg-primary/[0.03]" : ""}`}
+                  onClick={() => setSelectedNotice(item)}
+                >
+                  {/* Number / Pin */}
+                  <span className="hidden sm:flex w-16 justify-center">
+                    {item.pinned ? (
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">고정</span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{num}</span>
+                    )}
+                  </span>
 
-                    {/* Title */}
-                    <div className="flex items-center gap-2 min-w-0">
-                      {item.pinned && <span className="sm:hidden text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded flex-shrink-0">고정</span>}
-                      <h3 className={`text-sm group-hover:text-primary transition-colors ${item.pinned ? "font-bold" : "font-medium"} ${isExpanded ? "text-primary" : ""}`}>{item.title}</h3>
-                    </div>
-
-                    {/* Category */}
-                    <div className="flex sm:justify-center">
-                      <span className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full font-medium">{item.category}</span>
-                    </div>
-
-                    {/* Date */}
-                    <span className="text-xs text-muted-foreground sm:text-center">{formattedDate}</span>
+                  {/* Title */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    {item.pinned && <span className="sm:hidden text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded flex-shrink-0">고정</span>}
+                    <h3 className={`text-sm truncate group-hover:text-primary transition-colors ${item.pinned ? "font-bold" : "font-medium"}`}>{item.title}</h3>
                   </div>
 
-                  {/* Expanded Content */}
-                  {isExpanded && (
-                    <div className="px-6 pb-6 sm:pl-[calc(4rem+1.5rem+1rem)]">
-                      <div className="bg-background border border-border rounded-xl p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          <span className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full font-medium">{item.category}</span>
-                          <span className="text-sm text-muted-foreground">{fullDate}</span>
-                        </div>
-                        <h3 className="text-lg font-bold mb-4">{item.title}</h3>
-                        <p className="text-sm text-text-sub leading-relaxed whitespace-pre-wrap">{item.content}</p>
-                        {item.imageUrl && (
-                          <img src={item.imageUrl} alt={item.title} className="mt-4 rounded-lg max-h-80 object-cover" />
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  {/* Category */}
+                  <div className="flex sm:justify-center">
+                    <span className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full font-medium">{item.category}</span>
+                  </div>
+
+                  {/* Date */}
+                  <span className="text-xs text-muted-foreground sm:text-center">{formattedDate}</span>
                 </div>
               </FadeInSection>
             );
@@ -673,6 +651,37 @@ export function Home() {
             </div>
           )}
         </div>
+
+        {/* Notice Detail Modal */}
+        {selectedNotice && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setSelectedNotice(null)}>
+            <div className="relative w-full max-w-2xl max-h-[85vh] bg-surface rounded-2xl overflow-hidden shadow-2xl border border-border flex flex-col" onClick={(e) => e.stopPropagation()}>
+              {/* Close */}
+              <button onClick={() => setSelectedNotice(null)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-surface2 hover:bg-surface2/80 flex items-center justify-center transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Image */}
+              {selectedNotice.imageUrl && (
+                <img src={selectedNotice.imageUrl} alt={selectedNotice.title} className="w-full max-h-64 object-cover flex-shrink-0" />
+              )}
+
+              {/* Content */}
+              <div className="p-8 overflow-y-auto">
+                <div className="flex items-center gap-3 mb-5">
+                  {selectedNotice.pinned && <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded">고정</span>}
+                  <span className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full font-medium">{selectedNotice.category}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(selectedNotice.date).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                  </span>
+                </div>
+                <h2 className="text-2xl font-bold mb-6">{selectedNotice.title}</h2>
+                <div className="text-sm text-text-sub leading-relaxed whitespace-pre-wrap">{selectedNotice.content}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {recruitOpen && (
