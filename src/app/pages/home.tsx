@@ -205,10 +205,10 @@ export function Home() {
         <FadeInSection>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border border border-border rounded-2xl overflow-hidden mt-16">
             {[
-              { num: "3+", label: "활동 팀" },
+              { num: "9", label: "알럼나이" },
               { num: "20+", label: "활동 멤버" },
               { num: "10+", label: "프로젝트" },
-              { num: "2024", label: "설립 연도" },
+              { num: "2025", label: "설립 연도" },
             ].map(({ num, label }) => (
               <div key={label} className="bg-surface py-10 px-8 text-center hover:bg-surface2 transition-colors">
                 <div className="text-4xl sm:text-5xl font-black tracking-[-0.04em] text-primary leading-none mb-2">{num}</div>
