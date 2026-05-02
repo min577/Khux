@@ -119,7 +119,7 @@ export function ReviewForm() {
       }
 
       setSubmitted(true);
-      setTimeout(() => navigate("/review"), 1500);
+      setTimeout(() => navigate("/review?list=1"), 1500);
     } catch (err: any) {
       setError(err.message || "제출에 실패했습니다.");
     } finally {
@@ -147,7 +147,7 @@ export function ReviewForm() {
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 lg:px-8 py-4 flex items-center gap-4">
           <button
-            onClick={() => navigate("/review")}
+            onClick={() => navigate("/review?list=1")}
             className="inline-flex items-center gap-2 text-sm text-foreground/60 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

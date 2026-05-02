@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, Link, useSearchParams } from "react-router";
 import { LogOut, ArrowLeft, Users, Crown, ChevronRight, Check, Layers } from "lucide-react";
 import { useReviewUser, reviewApiFetch } from "../../utils/review-auth";
 import { MemberCard } from "../components/review/member-card";
@@ -31,6 +31,8 @@ interface SessionProgress {
 
 export function ReviewDashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const forceList = searchParams.get("list") === "1";
   const { user, loading: authLoading, logout } = useReviewUser();
   const [mySessions, setMySessions] = useState<ReviewSession[]>([]);
   const [session, setSession] = useState<ReviewSession | null>(null);
@@ -87,8 +89,8 @@ export function ReviewDashboard() {
         );
         setSessionProgress(progressMap);
 
-        // Auto-select only when there's exactly one session
-        if (mine.length === 1) {
+        // Auto-select only on initial entry (not when forced to list view via ?list=1)
+        if (mine.length === 1 && !forceList) {
           selectSession(mine[0]);
         } else {
           setLoading(false);
@@ -176,14 +178,22 @@ export function ReviewDashboard() {
           </div>
         )}
 
-        {/* Session selector when multiple sessions exist */}
-        {!session && mySessions.length > 1 && (
+        {/* Session list view */}
+        {!session && mySessions.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-foreground/70">
               <Layers className="w-4 h-4 text-primary" />
-              <span className="font-medium">동시 진행 중인 피어리뷰 {mySessions.length}개</span>
+              <span className="font-medium">
+                {mySessions.length > 1
+                  ? `동시 진행 중인 피어리뷰 ${mySessions.length}개`
+                  : "진행 중인 피어리뷰"}
+              </span>
             </div>
-            <p className="text-xs text-foreground/60">각 세션을 모두 완료해주세요.</p>
+            <p className="text-xs text-foreground/60">
+              {mySessions.length > 1
+                ? "각 세션을 모두 완료해주세요."
+                : "세션을 선택해 리뷰를 작성하세요."}
+            </p>
             {mySessions.map((sess) => {
               const prog = sessionProgress[sess.id];
               const commonDone = prog ? prog.common.done >= prog.common.total : false;
