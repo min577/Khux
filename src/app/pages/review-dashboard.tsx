@@ -50,7 +50,9 @@ export function ReviewDashboard() {
         if (!sessionsRes.ok) throw new Error("Failed to fetch sessions");
         const { sessions } = await sessionsRes.json();
 
-        const mine = sessions.filter((s: ReviewSession) => s.team === user!.team);
+        const mine = sessions.filter((s: ReviewSession) =>
+          s.members?.some((m) => m.discord_id === user!.discord_id)
+        );
         setMySessions(mine);
 
         // Auto-select if only one

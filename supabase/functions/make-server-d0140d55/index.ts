@@ -1119,6 +1119,39 @@ app.put("/make-server-d0140d55/review/sessions/:id", async (c) => {
   }
 });
 
+// Delete session (and all related review submissions)
+app.delete("/make-server-d0140d55/review/sessions/:id", async (c) => {
+  try {
+    const adminToken = c.req.header("x-user-token");
+    const botKey = c.req.header("x-bot-key");
+    let authorized = false;
+    if (adminToken) {
+      const { data: { user } } = await supabase.auth.getUser(adminToken);
+      if (user) authorized = true;
+    }
+    if (!authorized && verifyBotKey(botKey)) authorized = true;
+    if (!authorized) return c.json({ error: "Unauthorized" }, 401);
+
+    const id = c.req.param("id");
+    const session = await kv.get(`review_session:${id}`);
+    if (!session) return c.json({ error: "Session not found" }, 404);
+
+    const reviews = await kv.getByPrefixWithKeys(`review:${id}:`);
+    const leaderReviews = await kv.getByPrefixWithKeys(`leader_review:${id}:`);
+    const keys = [
+      ...reviews.map((r: any) => r.key),
+      ...leaderReviews.map((r: any) => r.key),
+    ];
+    if (keys.length > 0) await kv.mdel(keys);
+    await kv.del(`review_session:${id}`);
+
+    return c.json({ success: true, deleted_reviews: keys.length });
+  } catch (error) {
+    console.log(`Error deleting session: ${error}`);
+    return c.json({ error: "Failed to delete session" }, 500);
+  }
+});
+
 // ============ Review Submissions ============
 
 // Submit or update a peer review
@@ -1529,6 +1562,117 @@ app.post("/make-server-d0140d55/review/sessions/start-all", async (c) => {
   } catch (error) {
     console.log(`Error starting all sessions: ${error}`);
     return c.json({ error: "Failed to start sessions" }, 500);
+  }
+});
+
+// ============ Admin: Create custom (project-team) session ============
+
+// Helper: match a typed name against guild members (nick / global_name / username)
+function matchMemberByName(searchName: string, guildMembers: any[]): any | null {
+  const normalize = (s: string) =>
+    (s || "").replace(/\s+/g, "").replace(/leader/gi, "").toLowerCase().trim();
+  const target = normalize(searchName);
+  if (!target) return null;
+
+  // 1) Exact normalized match
+  for (const m of guildMembers) {
+    const cands = [m.nick, m.user.global_name, m.user.username].filter(Boolean);
+    for (const c of cands) {
+      if (normalize(c) === target) return m;
+    }
+  }
+  // 2) Contains fallback
+  for (const m of guildMembers) {
+    const cands = [m.nick, m.user.global_name, m.user.username].filter(Boolean);
+    for (const c of cands) {
+      if (normalize(c).includes(target)) return m;
+    }
+  }
+  return null;
+}
+
+// Create a custom session by member name list (for project teams)
+app.post("/make-server-d0140d55/review/sessions/create-custom", async (c) => {
+  try {
+    const adminToken = c.req.header("x-user-token");
+    const { data: { user } } = await supabase.auth.getUser(adminToken);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const { title, team_key, team_name, member_names } = await c.req.json();
+    if (!title || !team_key || !team_name || !Array.isArray(member_names) || member_names.length === 0) {
+      return c.json({ error: "title, team_key, team_name, member_names required" }, 400);
+    }
+
+    const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+    if (!botToken) return c.json({ error: "Bot token not configured" }, 500);
+
+    // Fetch all guild members
+    let allMembers: any[] = [];
+    let after = "0";
+    while (true) {
+      const res = await fetch(
+        `https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members?limit=1000&after=${after}`,
+        { headers: { Authorization: `Bot ${botToken}` } }
+      );
+      if (!res.ok) {
+        console.log(`Discord API error: ${res.status}`);
+        break;
+      }
+      const batch = await res.json();
+      if (batch.length === 0) break;
+      allMembers = allMembers.concat(batch);
+      if (batch.length < 1000) break;
+      after = batch[batch.length - 1].user.id;
+    }
+    const guildMembers = allMembers.filter((m: any) => !m.user.bot);
+
+    // Match each name to a guild member
+    const matched: any[] = [];
+    const notFound: string[] = [];
+    for (const rawName of member_names) {
+      const name = (rawName || "").trim();
+      if (!name) continue;
+      const m = matchMemberByName(name, guildMembers);
+      if (!m) {
+        notFound.push(name);
+        continue;
+      }
+      // Skip duplicates
+      if (matched.some((x) => x.discord_id === m.user.id)) continue;
+      const displayName = m.nick || m.user.global_name || m.user.username;
+      matched.push({
+        discord_id: m.user.id,
+        display_name: displayName,
+        is_leader: displayName?.includes("Leader") ?? false,
+      });
+    }
+
+    if (matched.length === 0) {
+      return c.json({ error: "No members matched", not_found: notFound }, 400);
+    }
+
+    const now = new Date();
+    const month = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const ts = now.getTime().toString(36);
+    const sessionId = `${team_key}_${month}_${ts}`;
+
+    const sessionData = {
+      id: sessionId,
+      title,
+      team: team_key,
+      team_name,
+      started_at: now.toISOString(),
+      active: true,
+      members: matched,
+      criteria: REVIEW_CRITERIA,
+      leader_criteria: LEADER_CRITERIA,
+    };
+
+    await kv.set(`review_session:${sessionId}`, sessionData);
+    return c.json({ session: sessionData, matched: matched.length, not_found: notFound }, 201);
+  } catch (error) {
+    console.log(`Error creating custom session: ${error}`);
+    return c.json({ error: "Failed to create custom session" }, 500);
   }
 });
 
