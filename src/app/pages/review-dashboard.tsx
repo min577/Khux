@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { LogOut, ArrowLeft, Users, Crown, ChevronRight } from "lucide-react";
+import { LogOut, ArrowLeft, Users, Crown, ChevronRight, Check, Layers } from "lucide-react";
 import { useReviewUser, reviewApiFetch } from "../../utils/review-auth";
 import { MemberCard } from "../components/review/member-card";
 import { ReviewProgress } from "../components/review/review-progress";
@@ -24,6 +24,11 @@ interface MyReview {
   target_id: string;
 }
 
+interface SessionProgress {
+  common: { done: number; total: number };
+  leader: { done: number; total: number };
+}
+
 export function ReviewDashboard() {
   const navigate = useNavigate();
   const { user, loading: authLoading, logout } = useReviewUser();
@@ -31,6 +36,7 @@ export function ReviewDashboard() {
   const [session, setSession] = useState<ReviewSession | null>(null);
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
   const [myLeaderReviews, setMyLeaderReviews] = useState<MyReview[]>([]);
+  const [sessionProgress, setSessionProgress] = useState<Record<string, SessionProgress>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -55,11 +61,35 @@ export function ReviewDashboard() {
         );
         setMySessions(mine);
 
-        // Auto-select if only one
+        // Fetch progress for each of my sessions in parallel
+        const progressEntries = await Promise.all(
+          mine.map(async (sess: ReviewSession) => {
+            try {
+              const res = await reviewApiFetch(`/review/sessions/${sess.id}/my-reviews`);
+              if (!res.ok) return null;
+              const { reviews, leader_reviews } = await res.json();
+              const otherCount = sess.members.filter((m) => m.discord_id !== user!.discord_id).length;
+              const leaderCount = sess.members.filter((m) => m.is_leader && m.discord_id !== user!.discord_id).length;
+              return [
+                sess.id,
+                {
+                  common: { done: (reviews || []).length, total: otherCount },
+                  leader: { done: (leader_reviews || []).length, total: leaderCount },
+                },
+              ] as [string, SessionProgress];
+            } catch {
+              return null;
+            }
+          })
+        );
+        const progressMap = Object.fromEntries(
+          progressEntries.filter(Boolean) as [string, SessionProgress][]
+        );
+        setSessionProgress(progressMap);
+
+        // Auto-select only when there's exactly one session
         if (mine.length === 1) {
           selectSession(mine[0]);
-        } else if (mine.length === 0) {
-          setLoading(false);
         } else {
           setLoading(false);
         }
@@ -149,20 +179,61 @@ export function ReviewDashboard() {
         {/* Session selector when multiple sessions exist */}
         {!session && mySessions.length > 1 && (
           <div className="space-y-3">
-            <p className="text-sm text-foreground/60">진행 중인 피어리뷰를 선택하세요.</p>
-            {mySessions.map((sess) => (
-              <button
-                key={sess.id}
-                onClick={() => selectSession(sess)}
-                className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:bg-accent/50 transition-all text-left"
-              >
-                <div>
-                  <p className="font-medium">{sess.title}</p>
-                  <p className="text-sm text-foreground/60 mt-0.5">{sess.team_name} — {sess.members?.length || 0}명</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-foreground/60" />
-              </button>
-            ))}
+            <div className="flex items-center gap-2 text-sm text-foreground/70">
+              <Layers className="w-4 h-4 text-primary" />
+              <span className="font-medium">동시 진행 중인 피어리뷰 {mySessions.length}개</span>
+            </div>
+            <p className="text-xs text-foreground/60">각 세션을 모두 완료해주세요.</p>
+            {mySessions.map((sess) => {
+              const prog = sessionProgress[sess.id];
+              const commonDone = prog ? prog.common.done >= prog.common.total : false;
+              const leaderDone = prog ? prog.leader.done >= prog.leader.total : false;
+              const allDone = !!prog && commonDone && leaderDone;
+              return (
+                <button
+                  key={sess.id}
+                  onClick={() => selectSession(sess)}
+                  className={`w-full flex items-center justify-between p-4 bg-card border rounded-xl hover:bg-accent/50 transition-all text-left ${
+                    allDone ? "border-green-500/40 bg-green-50/40" : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium">{sess.title}</p>
+                      {allDone && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                          <Check className="w-3 h-3" /> 완료
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground/60 mt-0.5">
+                      {sess.team_name} — {sess.members?.length || 0}명
+                    </p>
+                    {prog && (
+                      <div className="mt-2 flex gap-3 text-xs">
+                        <span
+                          className={
+                            commonDone ? "text-green-600 font-medium" : "text-foreground/60"
+                          }
+                        >
+                          공통 {prog.common.done}/{prog.common.total}
+                        </span>
+                        {prog.leader.total > 0 && (
+                          <span
+                            className={
+                              leaderDone ? "text-green-600 font-medium" : "text-foreground/60"
+                            }
+                          >
+                            리더 {prog.leader.done}/{prog.leader.total}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-foreground/60 flex-shrink-0" />
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -174,6 +245,57 @@ export function ReviewDashboard() {
 
         {session && (
           <>
+            {/* Concurrent sessions banner */}
+            {mySessions.length > 1 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Layers className="w-4 h-4 text-primary" />
+                    <span className="font-medium">동시 진행 중 {mySessions.length}개</span>
+                  </div>
+                  <button
+                    onClick={() => { setSession(null); setMyReviews([]); setMyLeaderReviews([]); }}
+                    className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    세션 목록 보기
+                  </button>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {mySessions.map((s) => {
+                    const prog = sessionProgress[s.id];
+                    const allDone = !!prog &&
+                      prog.common.done >= prog.common.total &&
+                      prog.leader.done >= prog.leader.total;
+                    const isCurrent = s.id === session.id;
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          if (!isCurrent) selectSession(s);
+                        }}
+                        disabled={isCurrent}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                          isCurrent
+                            ? "bg-primary text-primary-foreground border-primary cursor-default"
+                            : allDone
+                              ? "border-green-500/40 bg-green-50 text-green-700 hover:bg-green-100"
+                              : "border-border hover:bg-accent"
+                        }`}
+                      >
+                        {allDone && <Check className="w-3 h-3" />}
+                        <span className="font-medium">{s.team_name}</span>
+                        {prog && (
+                          <span className="opacity-70">
+                            {prog.common.done + prog.leader.done}/{prog.common.total + prog.leader.total}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Session Title */}
             <div className="bg-card border border-border rounded-xl p-6 lg:p-8">
               <div className="flex items-center justify-between">
