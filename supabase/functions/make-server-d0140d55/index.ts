@@ -1676,6 +1676,104 @@ app.post("/make-server-d0140d55/review/sessions/create-custom", async (c) => {
   }
 });
 
+// Bulk create custom sessions (multiple project teams in one call)
+app.post("/make-server-d0140d55/review/sessions/create-custom-bulk", async (c) => {
+  try {
+    const adminToken = c.req.header("x-user-token");
+    const { data: { user } } = await supabase.auth.getUser(adminToken);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const { title, teams } = await c.req.json();
+    if (!title || !Array.isArray(teams) || teams.length === 0) {
+      return c.json({ error: "title and teams required" }, 400);
+    }
+
+    const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+    if (!botToken) return c.json({ error: "Bot token not configured" }, 500);
+
+    // Fetch all guild members ONCE
+    let allMembers: any[] = [];
+    let after = "0";
+    while (true) {
+      const res = await fetch(
+        `https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members?limit=1000&after=${after}`,
+        { headers: { Authorization: `Bot ${botToken}` } }
+      );
+      if (!res.ok) {
+        console.log(`Discord API error: ${res.status}`);
+        break;
+      }
+      const batch = await res.json();
+      if (batch.length === 0) break;
+      allMembers = allMembers.concat(batch);
+      if (batch.length < 1000) break;
+      after = batch[batch.length - 1].user.id;
+    }
+    const guildMembers = allMembers.filter((m: any) => !m.user.bot);
+
+    const now = new Date();
+    const month = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const created: any[] = [];
+    const skipped: any[] = [];
+
+    for (const team of teams) {
+      const { team_key, team_name, member_names } = team;
+      if (!team_key || !team_name || !Array.isArray(member_names) || member_names.length === 0) {
+        skipped.push({ team_name: team_name || team_key, reason: "invalid input" });
+        continue;
+      }
+
+      const matched: any[] = [];
+      const notFound: string[] = [];
+      for (const rawName of member_names) {
+        const name = (rawName || "").trim();
+        if (!name) continue;
+        const m = matchMemberByName(name, guildMembers);
+        if (!m) {
+          notFound.push(name);
+          continue;
+        }
+        if (matched.some((x) => x.discord_id === m.user.id)) continue;
+        const displayName = m.nick || m.user.global_name || m.user.username;
+        matched.push({
+          discord_id: m.user.id,
+          display_name: displayName,
+          is_leader: displayName?.includes("Leader") ?? false,
+        });
+      }
+
+      if (matched.length === 0) {
+        skipped.push({ team_name, reason: "no members matched", not_found: notFound });
+        continue;
+      }
+
+      // Use millisecond timestamp + team_key for uniqueness across rapid sequential creates
+      const ts = (now.getTime() + created.length).toString(36);
+      const sessionId = `${team_key}_${month}_${ts}`;
+
+      const sessionData = {
+        id: sessionId,
+        title,
+        team: team_key,
+        team_name,
+        started_at: now.toISOString(),
+        active: true,
+        members: matched,
+        criteria: REVIEW_CRITERIA,
+        leader_criteria: LEADER_CRITERIA,
+      };
+
+      await kv.set(`review_session:${sessionId}`, sessionData);
+      created.push({ team_name, matched: matched.length, not_found: notFound });
+    }
+
+    return c.json({ created, skipped, total: created.length }, 201);
+  } catch (error) {
+    console.log(`Error in bulk create: ${error}`);
+    return c.json({ error: "Failed to create sessions" }, 500);
+  }
+});
+
 // ============ Review Config (public) ============
 
 app.get("/make-server-d0140d55/review/config", (c) => {

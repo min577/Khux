@@ -84,6 +84,13 @@ export function AdminDashboard() {
   const [customMembers, setCustomMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState("");
   const [creatingCustom, setCreatingCustom] = useState(false);
+  // Bulk (all 4 project teams at once) form
+  const [showBulkForm, setShowBulkForm] = useState(false);
+  const [bulkTitle, setBulkTitle] = useState("");
+  const [bulkTeams, setBulkTeams] = useState(
+    PROJECT_TEAM_PRESETS.map((p) => ({ ...p, members: [...p.members], input: "" }))
+  );
+  const [creatingBulk, setCreatingBulk] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -273,6 +280,71 @@ export function AdminDashboard() {
       setReviewMessage({ type: "error", text: "세션 생성에 실패했습니다." });
     } finally {
       setCreatingCustom(false);
+    }
+  };
+
+  // Bulk form helpers
+  const updateBulkTeam = (key: string, updater: (t: typeof bulkTeams[0]) => typeof bulkTeams[0]) => {
+    setBulkTeams((prev) => prev.map((t) => (t.key === key ? updater(t) : t)));
+  };
+  const addBulkMember = (key: string) => {
+    updateBulkTeam(key, (t) => {
+      const name = t.input.trim();
+      if (!name || t.members.includes(name)) return { ...t, input: "" };
+      return { ...t, members: [...t.members, name], input: "" };
+    });
+  };
+  const removeBulkMember = (key: string, name: string) => {
+    updateBulkTeam(key, (t) => ({ ...t, members: t.members.filter((m) => m !== name) }));
+  };
+  const setBulkInput = (key: string, value: string) => {
+    updateBulkTeam(key, (t) => ({ ...t, input: value }));
+  };
+  const resetBulkForm = () => {
+    setShowBulkForm(false);
+    setBulkTitle("");
+    setBulkTeams(PROJECT_TEAM_PRESETS.map((p) => ({ ...p, members: [...p.members], input: "" })));
+  };
+  const createBulkSessions = async () => {
+    if (!bulkTitle.trim()) return;
+    const validTeams = bulkTeams.filter((t) => t.members.length > 0);
+    if (validTeams.length === 0) return;
+    setCreatingBulk(true);
+    setReviewMessage(null);
+    try {
+      const res = await apiFetchAuth("/review/sessions/create-custom-bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: bulkTitle.trim(),
+          teams: validTeams.map((t) => ({
+            team_key: t.key,
+            team_name: t.name,
+            member_names: t.members,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const summary = (data.created || [])
+          .map((c: any) => {
+            const nf = c.not_found && c.not_found.length > 0 ? ` (실패 ${c.not_found.length}: ${c.not_found.join(", ")})` : "";
+            return `${c.team_name} ${c.matched}명${nf}`;
+          })
+          .join(" / ");
+        const skipText = (data.skipped || []).length > 0
+          ? ` — 건너뜀: ${data.skipped.map((s: any) => `${s.team_name}(${s.reason})`).join(", ")}`
+          : "";
+        setReviewMessage({ type: "success", text: `${data.total}개 팀 일괄 생성 완료 — ${summary}${skipText}` });
+        resetBulkForm();
+        fetchReviewSessions();
+      } else {
+        setReviewMessage({ type: "error", text: data.error || "일괄 생성 실패" });
+      }
+    } catch {
+      setReviewMessage({ type: "error", text: "일괄 생성에 실패했습니다." });
+    } finally {
+      setCreatingBulk(false);
     }
   };
 
@@ -1142,14 +1214,21 @@ export function AdminDashboard() {
                   <Lock className="w-3.5 h-3.5" />
                   PIN 변경
                 </button>
-                {!showStartForm && !showCustomForm && (
+                {!showStartForm && !showCustomForm && !showBulkForm && (
                   <>
                     <button
                       onClick={() => setShowCustomForm(true)}
                       className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-border rounded-lg font-medium hover:bg-accent transition-colors"
                     >
                       <Users className="w-4 h-4" />
-                      프로젝트 팀 세션
+                      프로젝트 팀 세션 (단일)
+                    </button>
+                    <button
+                      onClick={() => setShowBulkForm(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-border rounded-lg font-medium hover:bg-accent transition-colors"
+                    >
+                      <Users className="w-4 h-4" />
+                      프로젝트 팀 일괄 생성
                     </button>
                     <button
                       onClick={() => setShowStartForm(true)}
@@ -1372,6 +1451,116 @@ export function AdminDashboard() {
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                   >
                     {creatingCustom ? "생성 중..." : "세션 생성"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bulk (all 4 project teams) form */}
+            {showBulkForm && (
+              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">프로젝트 팀 일괄 생성</h3>
+                  <button
+                    onClick={resetBulkForm}
+                    className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                    title="닫기"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {bulkTeams.length}개 팀의 멤버를 미리 채워뒀습니다. 필요하면 팀별로 추가/제거 후 한 번에 생성하세요.
+                </p>
+
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">세션 제목 (모든 팀 공통)</label>
+                  <input
+                    type="text"
+                    value={bulkTitle}
+                    onChange={(e) => setBulkTitle(e.target.value)}
+                    placeholder="예: 4월 프로젝트 피어리뷰"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    disabled={creatingBulk}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {bulkTeams.map((team) => (
+                    <div key={team.key} className="border border-border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{team.name}</span>
+                        <span className="text-xs text-muted-foreground">{team.members.length}명</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 min-h-[1.75rem]">
+                        {team.members.length === 0 ? (
+                          <span className="text-xs text-muted-foreground italic py-1">멤버 없음 (생성에서 제외됨)</span>
+                        ) : (
+                          team.members.map((name) => (
+                            <span
+                              key={name}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent text-xs rounded-full"
+                            >
+                              {name}
+                              <button
+                                onClick={() => removeBulkMember(team.key, name)}
+                                disabled={creatingBulk}
+                                className="text-muted-foreground hover:text-destructive transition-colors"
+                                title="제거"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={team.input}
+                          onChange={(e) => setBulkInput(team.key, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addBulkMember(team.key);
+                            }
+                          }}
+                          placeholder="이름 추가"
+                          className="flex-1 px-2 py-1 bg-background border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 focus:border-primary"
+                          disabled={creatingBulk}
+                        />
+                        <button
+                          onClick={() => addBulkMember(team.key)}
+                          disabled={creatingBulk || !team.input.trim()}
+                          className="px-2 py-1 border border-border rounded text-xs hover:bg-accent transition-colors disabled:opacity-50"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 justify-end pt-1">
+                  <button
+                    onClick={resetBulkForm}
+                    disabled={creatingBulk}
+                    className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={createBulkSessions}
+                    disabled={
+                      creatingBulk ||
+                      !bulkTitle.trim() ||
+                      bulkTeams.every((t) => t.members.length === 0)
+                    }
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {creatingBulk
+                      ? "생성 중..."
+                      : `${bulkTeams.filter((t) => t.members.length > 0).length}개 팀 일괄 생성`}
                   </button>
                 </div>
               </div>
