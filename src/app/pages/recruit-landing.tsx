@@ -734,7 +734,7 @@ export function RecruitLanding() {
             <div className="proc-item">
               <div className="step mono">STEP 01</div>
               <h4>1차 서류 전형</h4>
-              <div className="when mono">8.12 – 8.23</div>
+              <div className="when mono">8.12 – 8.25</div>
             </div>
             <div className="proc-item">
               <div className="step mono">STEP 02</div>
@@ -743,7 +743,7 @@ export function RecruitLanding() {
                 <br />
                 <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>개별 문자 안내</span>
               </h4>
-              <div className="when mono">8.24</div>
+              <div className="when mono">8.26</div>
             </div>
             <div className="proc-item">
               <div className="step mono">STEP 03</div>
