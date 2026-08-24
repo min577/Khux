@@ -635,7 +635,7 @@ export function RecruitLanding() {
             <div className="meta-item">
               <div className="k mono">지원 마감</div>
               <div className="v">
-                <span className="mono">8.23 (일) 23:59</span>
+                <span className="mono">8.25 (화) 23:59</span>
               </div>
             </div>
           </div>
@@ -827,7 +827,7 @@ export function RecruitLanding() {
             지원서 작성하기 →
           </Link>
           <div className="deadline">
-            지원 마감 <span className="mono">2026.08.23 (일) 23:59</span>
+            지원 마감 <span className="mono">2026.08.25 (화) 23:59</span>
           </div>
         </div>
       </section>
