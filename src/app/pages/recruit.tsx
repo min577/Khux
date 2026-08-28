@@ -231,7 +231,7 @@ export function Recruit() {
           <div className="mb-12">
             <h1 className="text-4xl sm:text-5xl mb-4">Recruit</h1>
             <p className="text-base text-muted-foreground whitespace-pre-wrap">
-              {config.generation} 멤버를 모집합니다.{"\n"}{config.description}
+              {config.generation} 추가 모집이 진행 중입니다.{"\n"}{config.description}
             </p>
           </div>
 
@@ -251,18 +251,17 @@ export function Recruit() {
                 <Clock className="h-5 w-5 text-primary" />
                 <h3 className="font-medium">면접 일정</h3>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(config.interviewStart)} ~ {formatDate(config.interviewEnd)}
-              </p>
+              {/* 추가 모집 일정 확정 전까지 임시 표기. 확정되면 아래를
+                  {formatDate(config.interviewStart)} ~ {formatDate(config.interviewEnd)} 로 복원 */}
+              <p className="text-sm text-muted-foreground">추후 개별 안내</p>
             </div>
             <div className="p-6 bg-card border border-border rounded-xl">
               <div className="flex items-center gap-3 mb-3">
                 <FileText className="h-5 w-5 text-primary" />
                 <h3 className="font-medium">결과 발표</h3>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(config.resultDate)}
-              </p>
+              {/* 추가 모집 일정 확정 전까지 임시 표기. 확정되면 {formatDate(config.resultDate)} 로 복원 */}
+              <p className="text-sm text-muted-foreground">추후 개별 안내</p>
             </div>
           </div>
 
