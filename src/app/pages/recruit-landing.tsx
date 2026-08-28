@@ -602,7 +602,7 @@ export function RecruitLanding() {
               </div>
             </div>
             <div className="hero-copy">
-              <span className="eyebrow-tag mono">KHUX 4th Recruiting</span>
+              <span className="eyebrow-tag mono">KHUX 4기 추가 모집</span>
               <h1 className="hero-title">
                 치열한 고민과
                 <br />
@@ -743,7 +743,7 @@ export function RecruitLanding() {
                 <br />
                 <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>개별 문자 안내</span>
               </h4>
-              <div className="when mono">8.26</div>
+              <div className="when mono">추후 안내</div>
             </div>
             <div className="proc-item">
               <div className="step mono">STEP 03</div>
@@ -752,7 +752,7 @@ export function RecruitLanding() {
                 <br />
                 <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>비대면</span>
               </h4>
-              <div className="when mono">8.26 – 8.28</div>
+              <div className="when mono">추후 안내</div>
             </div>
             <div className="proc-item">
               <div className="step mono">STEP 04</div>
@@ -761,7 +761,7 @@ export function RecruitLanding() {
                 <br />
                 <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>개별 문자 안내</span>
               </h4>
-              <div className="when mono">8.29</div>
+              <div className="when mono">추후 안내</div>
             </div>
             <div className="proc-item">
               <div className="step mono">STEP 05</div>
@@ -770,7 +770,7 @@ export function RecruitLanding() {
                 <br />
                 <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>비대면 · 필참</span>
               </h4>
-              <div className="when mono">8.31</div>
+              <div className="when mono">추후 안내</div>
             </div>
             <div className="proc-item">
               <div className="step mono">STEP 06</div>
@@ -779,7 +779,7 @@ export function RecruitLanding() {
                 <br />
                 <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>대면 · 필참</span>
               </h4>
-              <div className="when mono">9.3</div>
+              <div className="when mono">추후 안내</div>
             </div>
           </div>
         </div>
