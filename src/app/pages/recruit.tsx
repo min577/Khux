@@ -251,9 +251,9 @@ export function Recruit() {
                 <Clock className="h-5 w-5 text-primary" />
                 <h3 className="font-medium">면접 일정</h3>
               </div>
-              {/* 추가 모집 일정 확정 전까지 임시 표기. 확정되면 아래를
-                  {formatDate(config.interviewStart)} ~ {formatDate(config.interviewEnd)} 로 복원 */}
-              <p className="text-sm text-muted-foreground">추후 개별 안내</p>
+              <p className="text-sm text-muted-foreground">
+                {formatDate(config.interviewStart)} ~ {formatDate(config.interviewEnd)}
+              </p>
             </div>
             <div className="p-6 bg-card border border-border rounded-xl">
               <div className="flex items-center gap-3 mb-3">
