@@ -766,6 +766,15 @@ export function RecruitLanding() {
             <div className="proc-item">
               <div className="step mono">STEP 05</div>
               <h4>
+                3차 추가 모집
+                <br />
+                <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>상세 내용 추후 안내</span>
+              </h4>
+              <div className="when mono">추후 안내</div>
+            </div>
+            <div className="proc-item">
+              <div className="step mono">STEP 06</div>
+              <h4>
                 부트캠프
                 <br />
                 <span style={{ fontWeight: 400, color: "var(--text-2)", fontSize: 13 }}>비대면 · 필참</span>
@@ -773,7 +782,7 @@ export function RecruitLanding() {
               <div className="when mono">추후 안내</div>
             </div>
             <div className="proc-item">
-              <div className="step mono">STEP 06</div>
+              <div className="step mono">STEP 07</div>
               <h4>
                 OT
                 <br />
