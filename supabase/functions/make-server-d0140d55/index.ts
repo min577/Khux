@@ -2128,7 +2128,7 @@ app.post("/make-server-d0140d55/review/sessions/start-all", async (c) => {
 // Helper: match a typed name against guild members (nick / global_name / username)
 function matchMemberByName(searchName: string, guildMembers: any[]): any | null {
   const normalize = (s: string) =>
-    (s || "").replace(/\s+/g, "").replace(/leader/gi, "").toLowerCase().trim();
+    (s || "").replace(/\[.*?\]/g, "").replace(/\s+/g, "").replace(/leader/gi, "").toLowerCase().trim();
   const target = normalize(searchName);
   if (!target) return null;
 
@@ -2249,6 +2249,53 @@ app.post("/make-server-d0140d55/review/sessions/create-custom", async (c) => {
   } catch (error) {
     console.log(`Error creating custom session: ${error}`);
     return c.json({ error: "Failed to create custom session" }, 500);
+  }
+});
+
+// Project teams from Discord "Team X" roles; members holding the "PM" role are pre-selected as leaders
+app.get("/make-server-d0140d55/review/project-teams", async (c) => {
+  try {
+    const adminToken = c.req.header("x-user-token");
+    const { data: { user } } = await supabase.auth.getUser(adminToken);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+    if (!botToken) return c.json({ error: "Bot token not configured" }, 500);
+    const headers = { Authorization: `Bot ${botToken}` };
+
+    const rolesRes = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/roles`, { headers });
+    const membersRes = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members?limit=1000`, { headers });
+    if (!rolesRes.ok || !membersRes.ok) {
+      console.log(`Discord API error: roles ${rolesRes.status}, members ${membersRes.status}`);
+      return c.json({ error: "Failed to fetch Discord roles/members" }, 502);
+    }
+    const roles = await rolesRes.json();
+    const members = (await membersRes.json()).filter((m: any) => !m.user.bot);
+
+    const pmRoleIds = roles.filter((r: any) => r.name.trim().toUpperCase() === "PM").map((r: any) => r.id);
+    const cleanName = (m: any) =>
+      (m.nick || m.user.global_name || m.user.username).replace(/\[.*?\]/g, "").trim();
+
+    const teams = roles
+      .filter((r: any) => /^team\s+\S+$/i.test(r.name.trim()))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name))
+      .map((r: any) => {
+        const teamMembers = members.filter((m: any) => m.roles.includes(r.id));
+        const suffix = r.name.trim().split(/\s+/)[1];
+        return {
+          key: `team_${suffix.toLowerCase()}`,
+          name: `TEAM ${suffix.toUpperCase()}`,
+          members: teamMembers.map(cleanName),
+          leaders: teamMembers
+            .filter((m: any) => m.roles.some((id: string) => pmRoleIds.includes(id)))
+            .map(cleanName),
+        };
+      });
+
+    return c.json({ teams });
+  } catch (error) {
+    console.log(`Error fetching project teams: ${error}`);
+    return c.json({ error: "Failed to fetch project teams" }, 500);
   }
 });
 

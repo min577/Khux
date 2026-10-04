@@ -96,12 +96,14 @@ export function AdminDashboard() {
   const [customLeaders, setCustomLeaders] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState("");
   const [creatingCustom, setCreatingCustom] = useState(false);
-  // Bulk (all 4 project teams at once) form
+  // Bulk form: project teams loaded from Discord "Team X" roles
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [bulkTitle, setBulkTitle] = useState("");
-  const [bulkTeams, setBulkTeams] = useState(
-    PROJECT_TEAM_PRESETS.map((p) => ({ ...p, members: [...p.members], input: "", leaders: [] as string[] }))
-  );
+  const [bulkTeams, setBulkTeams] = useState<
+    { key: string; name: string; members: string[]; input: string; leaders: string[] }[]
+  >([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkLoadError, setBulkLoadError] = useState("");
   const [creatingBulk, setCreatingBulk] = useState(false);
   // Department leader override input (comma-separated)
   const [deptLeaderInput, setDeptLeaderInput] = useState("");
@@ -364,7 +366,23 @@ export function AdminDashboard() {
   const resetBulkForm = () => {
     setShowBulkForm(false);
     setBulkTitle("");
-    setBulkTeams(PROJECT_TEAM_PRESETS.map((p) => ({ ...p, members: [...p.members], input: "", leaders: [] as string[] })));
+    setBulkTeams([]);
+    setBulkLoadError("");
+  };
+  const openBulkForm = async () => {
+    setShowBulkForm(true);
+    setBulkLoading(true);
+    setBulkLoadError("");
+    try {
+      const res = await apiFetchAuth("/review/project-teams");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setBulkTeams((data.teams || []).map((t: any) => ({ ...t, input: "" })));
+    } catch {
+      setBulkLoadError("디스코드에서 Team 역할을 불러오지 못했습니다.");
+    } finally {
+      setBulkLoading(false);
+    }
   };
   const createBulkSessions = async () => {
     if (!bulkTitle.trim()) return;
@@ -1267,7 +1285,7 @@ export function AdminDashboard() {
                       프로젝트 팀 세션 (단일)
                     </button>
                     <button
-                      onClick={() => setShowBulkForm(true)}
+                      onClick={openBulkForm}
                       className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-border rounded-lg font-medium hover:bg-accent transition-colors"
                     >
                       <Users className="w-4 h-4" />
@@ -1532,7 +1550,7 @@ export function AdminDashboard() {
               </div>
             )}
 
-            {/* Bulk (all 4 project teams) form */}
+            {/* Bulk (all project teams) form */}
             {showBulkForm && (
               <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
@@ -1546,8 +1564,11 @@ export function AdminDashboard() {
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {bulkTeams.length}개 팀의 멤버를 미리 채워뒀습니다. 멤버 옆 왕관 아이콘을 클릭해 팀별 PM을 지정하세요.
+                  {bulkLoading
+                    ? "디스코드에서 Team 역할을 불러오는 중..."
+                    : `디스코드 Team 역할 기준으로 ${bulkTeams.length}개 팀을 불러왔습니다. PM 역할이 있는 멤버는 리더(왕관)로 지정돼 있으며, 클릭해서 바꿀 수 있습니다.`}
                 </p>
+                {bulkLoadError && <p className="text-xs text-destructive">{bulkLoadError}</p>}
 
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">세션 제목 (모든 팀 공통)</label>
