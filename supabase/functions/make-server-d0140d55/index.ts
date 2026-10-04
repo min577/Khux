@@ -1670,7 +1670,7 @@ app.get("/make-server-d0140d55/review/edu-survey/export", async (c) => {
   }
 });
 
-// ============ EDU Evaluation (Discord /edu평가) ============
+// ============ EDU Evaluation (Discord /교육평가) ============
 
 const EDU_EVAL_ROUND = "4기";
 const EDU_EVAL_TITLE = "KHUX 4기 교육 만족도 조사";
@@ -1820,7 +1820,7 @@ app.post("/make-server-d0140d55/discord/interactions", async (c) => {
   const key = `edu_eval:${EDU_EVAL_ROUND}:${discordUser.id}`;
 
   try {
-    if (interaction.type === 2 && interaction.data?.name === "edu평가") {
+    if (interaction.type === 2 && interaction.data?.name === "교육평가") {
       return c.json(buildEduEvalModal(await kv.get(key)));
     }
 
@@ -1832,7 +1832,7 @@ app.post("/make-server-d0140d55/discord/interactions", async (c) => {
       const validAnswers = answers.every((a, i) =>
         Number.isInteger(a) && a >= 0 && a < EDU_EVAL_QUESTIONS[i].options.length
       );
-      if (!validAnswers) return c.json(ephemeral("모든 문항에 응답해주세요. `/edu평가`로 다시 작성할 수 있어요."));
+      if (!validAnswers) return c.json(ephemeral("모든 문항에 응답해주세요. `/교육평가`로 다시 작성할 수 있어요."));
       if (comment.length < EDU_EVAL_COMMENT.min_length) {
         return c.json(ephemeral(`의견은 ${EDU_EVAL_COMMENT.min_length}자 이상 작성해주세요. (현재 ${comment.length}자)`));
       }
@@ -1850,7 +1850,7 @@ app.post("/make-server-d0140d55/discord/interactions", async (c) => {
       return c.json(ephemeral(
         existing
           ? "✅ 교육 만족도 조사 응답이 수정되었습니다. 감사합니다!"
-          : "✅ 교육 만족도 조사가 제출되었습니다. 감사합니다! (`/edu평가`로 언제든 수정할 수 있어요)",
+          : "✅ 교육 만족도 조사가 제출되었습니다. 감사합니다! (`/교육평가`로 언제든 수정할 수 있어요)",
       ));
     }
 
