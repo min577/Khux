@@ -1674,8 +1674,6 @@ app.get("/make-server-d0140d55/review/edu-survey/export", async (c) => {
 
 const EDU_EVAL_ROUND = "4기";
 const EDU_EVAL_TITLE = "KHUX 4기 교육 만족도 조사";
-// Discord role whose members may view results on /admin/edu
-const EDU_ROLE_ID = Deno.env.get("EDU_ROLE_ID") ?? TEAM_ROLES.education.role_id;
 
 // label: shown in the Discord modal (max 45 chars), desc: full question
 const EDU_EVAL_QUESTIONS = [
@@ -1866,25 +1864,12 @@ app.post("/make-server-d0140d55/discord/interactions", async (c) => {
   }
 });
 
-// Check live (not cached at login) whether a user currently holds the EDU role
-async function hasEduRole(discordId: string) {
-  const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
-  if (!botToken) return false;
-  const res = await fetch(
-    `https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${discordId}`,
-    { headers: { Authorization: `Bot ${botToken}` } },
-  );
-  if (!res.ok) return false;
-  const memberData = await res.json();
-  return (memberData.roles || []).includes(EDU_ROLE_ID);
-}
-
-// Results for /admin/edu — Discord login + EDU role only
+// Results for the admin dashboard (peer review tab, PIN-gated on the client like other review data)
 app.get("/make-server-d0140d55/edu-eval/responses", async (c) => {
   try {
-    const user = await getReviewUser(c.req.header("x-review-token"));
-    if (!user) return c.json({ error: "Not authenticated" }, 401);
-    if (!(await hasEduRole(user.discord_id))) return c.json({ error: "EDU role required" }, 403);
+    const adminToken = c.req.header("x-user-token");
+    const { data: { user } } = await supabase.auth.getUser(adminToken);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
 
     const rows = await kv.getByPrefix(`edu_eval:${EDU_EVAL_ROUND}:`);
     rows.sort((a: any, b: any) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime());

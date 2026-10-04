@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { supabase, apiFetch, apiFetchAuth, uploadImage, API_BASE_URL } from "../../utils/supabase-client";
 import { publicAnonKey } from "/utils/supabase/info";
+import { EduEvalResults } from "../components/review/edu-eval-results";
 import type { Article, NoticeItem, GalleryItem, Activity } from "../data/mock-data";
 import { MarkdownEditor } from "../components/markdown-editor";
 import { AdminRecruitTab } from "./admin-recruit";
@@ -1843,6 +1844,8 @@ export function AdminDashboard() {
                 ));
               })()
             )}
+
+            <EduEvalResults />
           </div>
         )}
 
