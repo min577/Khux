@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { useReviewUser } from "../../utils/review-auth";
 
-const DISCORD_CLIENT_ID = "1487816060777533532";
+const DISCORD_CLIENT_ID = "1556260836022951997";
 const REDIRECT_URI = "https://khux.vercel.app/auth/discord/callback";
 const DISCORD_AUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds.members.read`;
 

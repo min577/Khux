@@ -989,7 +989,7 @@ app.post("/make-server-d0140d55/init-sample-data", async (c) => {
 
 // ============ Review System Configuration ============
 
-const DISCORD_CLIENT_ID = Deno.env.get("DISCORD_CLIENT_ID") ?? "1487816060777533532";
+const DISCORD_CLIENT_ID = Deno.env.get("DISCORD_CLIENT_ID") ?? "1556260836022951997";
 const DISCORD_GUILD_ID = "1469604778496757783";
 const DISCORD_REDIRECT_URI = "https://khux.vercel.app/auth/discord/callback";
 
