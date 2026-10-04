@@ -4,3 +4,4 @@ supabase/.temp
 .claude/settings.local.json
 # 로컬에서 리크루팅 전용 모드(VITE_SITE_MODE=recruit-only)로 띄울 때 쓰는 파일
 .env.local
+.env.migrate

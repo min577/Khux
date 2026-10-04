@@ -18,6 +18,7 @@ import { ReviewDashboard } from "./pages/review-dashboard";
 import { ReviewForm } from "./pages/review-form";
 import { ReviewSurvey } from "./pages/review-survey";
 import { AdminReview } from "./pages/admin-review";
+import { AdminEdu } from "./pages/admin-edu";
 import { Notice } from "./pages/notice";
 import { Members } from "./pages/members";
 import { MembersNotice } from "./pages/members-notice";
@@ -70,6 +71,10 @@ const fullSiteRoutes = [
   {
     path: "/admin/review",
     Component: AdminReview,
+  },
+  {
+    path: "/admin/edu",
+    Component: AdminEdu,
   },
   {
     path: "/admin/applications",

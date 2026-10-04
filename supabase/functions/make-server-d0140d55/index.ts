@@ -989,7 +989,7 @@ app.post("/make-server-d0140d55/init-sample-data", async (c) => {
 
 // ============ Review System Configuration ============
 
-const DISCORD_CLIENT_ID = "1487816060777533532";
+const DISCORD_CLIENT_ID = Deno.env.get("DISCORD_CLIENT_ID") ?? "1487816060777533532";
 const DISCORD_GUILD_ID = "1469604778496757783";
 const DISCORD_REDIRECT_URI = "https://khux.vercel.app/auth/discord/callback";
 
@@ -1667,6 +1667,232 @@ app.get("/make-server-d0140d55/review/edu-survey/export", async (c) => {
   } catch (error) {
     console.log(`Error exporting edu survey: ${error}`);
     return c.json({ error: "Failed to export survey" }, 500);
+  }
+});
+
+// ============ EDU Evaluation (Discord /edu평가) ============
+
+const EDU_EVAL_ROUND = "4기";
+const EDU_EVAL_TITLE = "KHUX 4기 교육 만족도 조사";
+// Discord role whose members may view results on /admin/edu
+const EDU_ROLE_ID = Deno.env.get("EDU_ROLE_ID") ?? TEAM_ROLES.education.role_id;
+
+// label: shown in the Discord modal (max 45 chars), desc: full question
+const EDU_EVAL_QUESTIONS = [
+  {
+    id: "satisfaction",
+    label: "1. 교육 세션 만족도",
+    desc: "현재 EDU팀에서 진행하는 교육 세션 전반에 얼마나 만족하셨나요?",
+    options: ["매우 만족", "만족", "보통", "불만족", "매우 불만족"],
+  },
+  {
+    id: "project_help",
+    label: "2. 프로젝트 수행 도움 정도",
+    desc: "EDU팀의 교육이 현재 진행하고 있는 프로젝트를 수행하는 데 얼마나 도움이 되었나요?",
+    options: ["매우 도움이 되었다", "도움이 되었다", "보통이다", "별로 도움이 되지 않았다", "전혀 도움이 되지 않았다"],
+  },
+  {
+    id: "difficulty",
+    label: "3. 교육 난이도",
+    desc: "현재 교육의 난이도는 적절하다고 생각하나요?",
+    options: ["매우 쉬웠다", "쉬웠다", "적절했다", "어려웠다", "매우 어려웠다"],
+  },
+  {
+    id: "quiz_help",
+    label: "4. 복습 퀴즈 도움 정도",
+    desc: "교육 세션 이후 진행되는 복습 퀴즈가 교육 내용을 복습하고 이해하는 데 도움이 되었나요?",
+    options: ["매우 도움이 되었다", "도움이 되었다", "보통이다", "별로 도움이 되지 않았다", "전혀 도움이 되지 않았다"],
+  },
+];
+
+const EDU_EVAL_COMMENT = {
+  id: "comment",
+  label: "5. 의견 및 제안",
+  desc: "학회 교육과 관련하여 전하고 싶은 의견이나 제안이 있다면 자유롭게 작성해주세요.",
+  hint: "교육세션을 비롯해 산학협력 프로젝트를 진행하면서 추가적으로 제공되었으면 하는 교육 등도 좋습니다.",
+  min_length: 50,
+};
+
+function hexToBytes(hex: string) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return bytes;
+}
+
+async function verifyDiscordSignature(body: string, signature: string | undefined, timestamp: string | undefined) {
+  const publicKey = Deno.env.get("DISCORD_PUBLIC_KEY");
+  if (!publicKey || !signature || !timestamp) return false;
+  try {
+    const key = await crypto.subtle.importKey("raw", hexToBytes(publicKey), { name: "Ed25519" }, false, ["verify"]);
+    return await crypto.subtle.verify(
+      "Ed25519", key, hexToBytes(signature), new TextEncoder().encode(timestamp + body),
+    );
+  } catch {
+    return false;
+  }
+}
+
+function ephemeral(content: string) {
+  return { type: 4, data: { content, flags: 64 } };
+}
+
+function buildEduEvalModal(existing: any) {
+  return {
+    type: 9,
+    data: {
+      custom_id: "edu_eval",
+      title: EDU_EVAL_TITLE,
+      components: [
+        ...EDU_EVAL_QUESTIONS.map((q, qi) => ({
+          type: 18, // Label
+          label: q.label,
+          description: q.desc,
+          component: {
+            type: 3, // String select
+            custom_id: q.id,
+            required: true,
+            min_values: 1,
+            max_values: 1,
+            placeholder: "선택해주세요",
+            options: q.options.map((label, oi) => ({
+              label,
+              value: String(oi),
+              default: existing?.answers?.[qi] === oi,
+            })),
+          },
+        })),
+        {
+          type: 18,
+          label: EDU_EVAL_COMMENT.label,
+          description: EDU_EVAL_COMMENT.desc,
+          component: {
+            type: 4, // Text input
+            custom_id: EDU_EVAL_COMMENT.id,
+            style: 2,
+            required: true,
+            min_length: EDU_EVAL_COMMENT.min_length,
+            max_length: 2000,
+            placeholder: `${EDU_EVAL_COMMENT.hint} (${EDU_EVAL_COMMENT.min_length}자 이상)`.slice(0, 100),
+            ...(existing?.comment ? { value: existing.comment } : {}),
+          },
+        },
+      ],
+    },
+  };
+}
+
+// Collect {custom_id: value(s)} from modal submit, for both Label and legacy Action Row layouts
+function collectModalValues(components: any[]) {
+  const values: Record<string, any> = {};
+  const visit = (c: any) => {
+    if (!c) return;
+    if (c.custom_id) values[c.custom_id] = c.values ?? c.value;
+    if (c.component) visit(c.component);
+    (c.components || []).forEach(visit);
+  };
+  components.forEach(visit);
+  return values;
+}
+
+function teamNameFromRoles(roles: string[] = []) {
+  return Object.values(TEAM_ROLES)
+    .filter((t) => roles.includes(t.role_id))
+    .map((t) => t.name)
+    .join(", ");
+}
+
+// Discord HTTP interactions endpoint (set as Interactions Endpoint URL in the Developer Portal)
+app.post("/make-server-d0140d55/discord/interactions", async (c) => {
+  const body = await c.req.text();
+  const valid = await verifyDiscordSignature(
+    body, c.req.header("x-signature-ed25519"), c.req.header("x-signature-timestamp"),
+  );
+  if (!valid) return c.text("invalid request signature", 401);
+
+  const interaction = JSON.parse(body);
+  if (interaction.type === 1) return c.json({ type: 1 }); // PING
+
+  const member = interaction.member;
+  const discordUser = member?.user ?? interaction.user;
+  if (!member || !discordUser) {
+    return c.json(ephemeral("KHUX 서버 안에서 사용해주세요."));
+  }
+  const key = `edu_eval:${EDU_EVAL_ROUND}:${discordUser.id}`;
+
+  try {
+    if (interaction.type === 2 && interaction.data?.name === "edu평가") {
+      return c.json(buildEduEvalModal(await kv.get(key)));
+    }
+
+    if (interaction.type === 5 && interaction.data?.custom_id === "edu_eval") {
+      const values = collectModalValues(interaction.data.components || []);
+      const answers = EDU_EVAL_QUESTIONS.map((q) => Number(values[q.id]?.[0]));
+      const comment = String(values[EDU_EVAL_COMMENT.id] ?? "").trim();
+
+      const validAnswers = answers.every((a, i) =>
+        Number.isInteger(a) && a >= 0 && a < EDU_EVAL_QUESTIONS[i].options.length
+      );
+      if (!validAnswers) return c.json(ephemeral("모든 문항에 응답해주세요. `/edu평가`로 다시 작성할 수 있어요."));
+      if (comment.length < EDU_EVAL_COMMENT.min_length) {
+        return c.json(ephemeral(`의견은 ${EDU_EVAL_COMMENT.min_length}자 이상 작성해주세요. (현재 ${comment.length}자)`));
+      }
+
+      const existing = await kv.get(key);
+      await kv.set(key, {
+        respondent_id: discordUser.id,
+        respondent_name: member.nick || discordUser.global_name || discordUser.username,
+        team_name: teamNameFromRoles(member.roles),
+        answers,
+        comment,
+        submitted_at: new Date().toISOString(),
+      });
+
+      return c.json(ephemeral(
+        existing
+          ? "✅ 교육 만족도 조사 응답이 수정되었습니다. 감사합니다!"
+          : "✅ 교육 만족도 조사가 제출되었습니다. 감사합니다! (`/edu평가`로 언제든 수정할 수 있어요)",
+      ));
+    }
+
+    return c.json(ephemeral("알 수 없는 명령입니다."));
+  } catch (error) {
+    console.log(`Discord interaction error: ${error}`);
+    return c.json(ephemeral("처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+  }
+});
+
+// Check live (not cached at login) whether a user currently holds the EDU role
+async function hasEduRole(discordId: string) {
+  const botToken = Deno.env.get("DISCORD_BOT_TOKEN");
+  if (!botToken) return false;
+  const res = await fetch(
+    `https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${discordId}`,
+    { headers: { Authorization: `Bot ${botToken}` } },
+  );
+  if (!res.ok) return false;
+  const memberData = await res.json();
+  return (memberData.roles || []).includes(EDU_ROLE_ID);
+}
+
+// Results for /admin/edu — Discord login + EDU role only
+app.get("/make-server-d0140d55/edu-eval/responses", async (c) => {
+  try {
+    const user = await getReviewUser(c.req.header("x-review-token"));
+    if (!user) return c.json({ error: "Not authenticated" }, 401);
+    if (!(await hasEduRole(user.discord_id))) return c.json({ error: "EDU role required" }, 403);
+
+    const rows = await kv.getByPrefix(`edu_eval:${EDU_EVAL_ROUND}:`);
+    rows.sort((a: any, b: any) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime());
+
+    return c.json({
+      title: EDU_EVAL_TITLE,
+      questions: EDU_EVAL_QUESTIONS.map(({ id, desc, options }) => ({ id, desc, options })),
+      comment_question: { desc: EDU_EVAL_COMMENT.desc },
+      responses: rows,
+    });
+  } catch (error) {
+    console.log(`Error listing edu eval responses: ${error}`);
+    return c.json({ error: "Failed to list responses" }, 500);
   }
 });
 
