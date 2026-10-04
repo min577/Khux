@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { ArrowLeft, Download, StopCircle, RefreshCw, Check, X, Play, Lock, Users, Plus, Trash2, Crown } from "lucide-react";
+import { ArrowLeft, Download, StopCircle, RefreshCw, Check, X, Play, Lock, Users, Plus, Trash2, Crown, GraduationCap } from "lucide-react";
 import { supabase, apiFetchAuth, API_BASE_URL } from "../../utils/supabase-client";
 import { publicAnonKey } from "/utils/supabase/info";
 
@@ -29,6 +29,7 @@ interface MemberStatus {
   leader_total: number;
   leader_done: number;
   complete: boolean;
+  survey_done?: boolean;
 }
 
 const PROJECT_TEAM_PRESETS: { key: string; name: string; members: string[] }[] = [
@@ -70,6 +71,7 @@ export function AdminReview() {
   // Bulk export / cleanup
   const [exportingAll, setExportingAll] = useState(false);
   const [exportingBatch, setExportingBatch] = useState<string | null>(null);
+  const [exportingSurvey, setExportingSurvey] = useState<string | null>(null);
   const [deletingEnded, setDeletingEnded] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
@@ -353,6 +355,33 @@ export function AdminReview() {
     }
   }
 
+  // title === null downloads survey responses across all 회차
+  async function exportEduSurvey(title: string | null) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setExportingSurvey(title ?? "__all__");
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const query = title ? `?title=${encodeURIComponent(title)}` : "";
+      const res = await fetch(`${API_BASE_URL}/review/edu-survey/export${query}`, {
+        headers: {
+          Authorization: `Bearer ${publicAnonKey}`,
+          "x-user-token": session.access_token,
+        },
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const safeTitle = title ? title.replace(/[\\/:*?"<>|]/g, "_").trim() : "all_sessions";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${safeTitle}_edu_survey_${today}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } finally {
+      setExportingSurvey(null);
+    }
+  }
+
   async function deleteBatchByTitle(title: string) {
     const batch = sessions.filter((s) => s.title === title);
     if (batch.length === 0) return;
@@ -531,6 +560,15 @@ export function AdminReview() {
               >
                 <Download className="w-4 h-4" />
                 {exportingAll ? "다운로드 중..." : "전체 통합 CSV 다운로드"}
+              </button>
+              <button
+                onClick={() => exportEduSurvey(null)}
+                disabled={exportingSurvey === "__all__" || sessions.length === 0}
+                className="flex items-center justify-center gap-2 py-3 border border-border bg-card rounded-xl font-medium hover:bg-accent transition-colors disabled:opacity-50"
+                title="모든 회차의 교육만족도 조사 응답을 CSV로 다운로드"
+              >
+                <GraduationCap className="w-4 h-4" />
+                {exportingSurvey === "__all__" ? "다운로드 중..." : "전체 교육만족도 CSV"}
               </button>
               <button
                 onClick={deleteAllSessions}
@@ -833,6 +871,15 @@ export function AdminReview() {
                         {exportingBatch === title ? "다운로드 중..." : "회차 통합 CSV"}
                       </button>
                       <button
+                        onClick={() => exportEduSurvey(title)}
+                        disabled={exportingSurvey === title}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
+                        title={`"${title}" 회차의 교육만족도 조사 응답 CSV 다운로드`}
+                      >
+                        <GraduationCap className="w-3.5 h-3.5" />
+                        {exportingSurvey === title ? "다운로드 중..." : "교육만족도 CSV"}
+                      </button>
+                      <button
                         onClick={() => deleteBatchByTitle(title)}
                         disabled={deletingBatch === title}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-destructive/30 text-destructive bg-card rounded-lg hover:bg-destructive/10 transition-colors disabled:opacity-50"
@@ -918,16 +965,17 @@ export function AdminReview() {
                       <p className="text-sm text-muted-foreground animate-pulse">불러오는 중...</p>
                     ) : (
                       <div className="space-y-2">
-                        <div className="grid grid-cols-[1fr,80px,80px,60px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b border-border">
+                        <div className="grid grid-cols-[1fr,80px,80px,80px,60px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b border-border">
                           <span>이름</span>
                           <span className="text-center">공통 리뷰</span>
                           <span className="text-center">리더 평가</span>
+                          <span className="text-center">교육만족도</span>
                           <span className="text-center">상태</span>
                         </div>
                         {statusData.map((member) => (
                           <div
                             key={member.discord_id}
-                            className="grid grid-cols-[1fr,80px,80px,60px] gap-2 items-center text-sm py-1.5"
+                            className="grid grid-cols-[1fr,80px,80px,80px,60px] gap-2 items-center text-sm py-1.5"
                           >
                             <div className="flex items-center gap-2">
                               <span>{member.display_name}</span>
@@ -943,6 +991,13 @@ export function AdminReview() {
                             <span className="text-center text-muted-foreground">
                               {member.leader_done}/{member.leader_total}
                             </span>
+                            <div className="flex justify-center">
+                              {member.survey_done ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </div>
                             <div className="flex justify-center">
                               {member.complete ? (
                                 <Check className="w-4 h-4 text-green-600" />

@@ -1012,6 +1012,52 @@ const LEADER_CRITERIA = [
   { name: "문제 대응 및 방향성 제시", desc: "문제에 대해 적절히 대응하고, 팀의 방향성을 명확하게 제시했나요?" },
 ];
 
+const EDU_SURVEY_QUESTIONS = [
+  {
+    name: "교육 세션 만족도",
+    desc: "현재 EDU팀에서 진행하는 교육 세션 전반에 얼마나 만족하셨나요?",
+    options: ["매우 만족", "만족", "보통", "불만족", "매우 불만족"],
+  },
+  {
+    name: "프로젝트 도움 정도",
+    desc: "EDU팀의 교육이 현재 진행하고 있는 프로젝트를 수행하는 데 얼마나 도움이 되었나요?",
+    options: ["매우 도움이 되었다", "도움이 되었다", "보통이다", "별로 도움이 되지 않았다", "전혀 도움이 되지 않았다"],
+  },
+  {
+    name: "교육 난이도",
+    desc: "현재 교육의 난이도는 적절하다고 생각하나요?",
+    options: ["매우 쉬웠다", "쉬웠다", "적절했다", "어려웠다", "매우 어려웠다"],
+  },
+  {
+    name: "복습 퀴즈 도움 정도",
+    desc: "교육 세션 이후 진행되는 복습 퀴즈가 교육 내용을 복습하고 이해하는 데 도움이 되었나요?",
+    options: ["매우 도움이 되었다", "도움이 되었다", "보통이다", "별로 도움이 되지 않았다", "전혀 도움이 되지 않았다"],
+  },
+];
+
+const EDU_SURVEY_COMMENT = {
+  name: "의견 및 제안",
+  desc: "학회 교육과 관련하여 전하고 싶은 의견이나 제안이 있다면 자유롭게 작성해주세요.",
+  hint: "교육세션을 비롯해 산학협력 프로젝트를 진행하면서 추가적으로 제공되었으면 하는 교육 등도 좋습니다.",
+  min_length: 50,
+};
+
+// Edu survey responses are stored per session (edu_survey:{sessionId}:{discordId}),
+// but a member answers once per 회차 (sessions sharing the same title).
+async function getSameTitleSessions(title: string) {
+  const sessions = await kv.getByPrefix("review_session:");
+  return sessions.filter((s: any) => s.title === title);
+}
+
+async function findEduSurveyResponses(sessions: any[]) {
+  const results: { key: string; session: any; value: any }[] = [];
+  for (const sess of sessions) {
+    const rows = await kv.getByPrefixWithKeys(`edu_survey:${sess.id}:`);
+    for (const r of rows) results.push({ key: r.key, session: sess, value: r.value });
+  }
+  return results;
+}
+
 // Helper: verify Discord review session token
 async function getReviewUser(token: string | undefined) {
   if (!token) return null;
@@ -1247,9 +1293,11 @@ app.delete("/make-server-d0140d55/review/sessions/:id", async (c) => {
 
     const reviews = await kv.getByPrefixWithKeys(`review:${id}:`);
     const leaderReviews = await kv.getByPrefixWithKeys(`leader_review:${id}:`);
+    const eduSurveys = await kv.getByPrefixWithKeys(`edu_survey:${id}:`);
     const keys = [
       ...reviews.map((r: any) => r.key),
       ...leaderReviews.map((r: any) => r.key),
+      ...eduSurveys.map((r: any) => r.key),
     ];
     if (keys.length > 0) await kv.mdel(keys);
     await kv.del(`review_session:${id}`);
@@ -1372,6 +1420,11 @@ app.get("/make-server-d0140d55/review/sessions/:id/status", async (c) => {
     const members = session.members || [];
     const leaders = members.filter((m: any) => m.is_leader);
 
+    const surveyDoneIds = new Set(
+      (await findEduSurveyResponses(await getSameTitleSessions(session.title)))
+        .map((r) => r.value.respondent_id)
+    );
+
     const status = members.map((member: any) => {
       const otherMembers = members.filter((m: any) => m.discord_id !== member.discord_id);
       const otherLeaders = leaders.filter((l: any) => l.discord_id !== member.discord_id);
@@ -1392,6 +1445,7 @@ app.get("/make-server-d0140d55/review/sessions/:id/status", async (c) => {
         leader_total: otherLeaders.length,
         leader_done: leaderReviewedIds.length,
         complete: reviewedIds.length >= otherMembers.length && leaderReviewedIds.length >= otherLeaders.length,
+        survey_done: surveyDoneIds.has(member.discord_id),
       };
     });
 
@@ -1497,6 +1551,122 @@ app.get("/make-server-d0140d55/review/export-all", async (c) => {
   } catch (error) {
     console.log(`Error exporting all sessions: ${error}`);
     return c.json({ error: "Failed to export all" }, 500);
+  }
+});
+
+// ============ Edu Satisfaction Survey ============
+
+// Get survey questions and current user's response for this 회차
+app.get("/make-server-d0140d55/review/sessions/:id/edu-survey", async (c) => {
+  try {
+    const user = await getReviewUser(c.req.header("x-review-token"));
+    if (!user) return c.json({ error: "Not authenticated" }, 401);
+
+    const session = await kv.get(`review_session:${c.req.param("id")}`);
+    if (!session) return c.json({ error: "Session not found" }, 404);
+
+    const responses = await findEduSurveyResponses(await getSameTitleSessions(session.title));
+    const mine = responses.find((r) => r.value.respondent_id === user.discord_id);
+
+    return c.json({
+      questions: EDU_SURVEY_QUESTIONS,
+      comment_question: EDU_SURVEY_COMMENT,
+      response: mine?.value ?? null,
+    });
+  } catch (error) {
+    console.log(`Error getting edu survey: ${error}`);
+    return c.json({ error: "Failed to get survey" }, 500);
+  }
+});
+
+// Submit or update current user's survey response
+app.post("/make-server-d0140d55/review/sessions/:id/edu-survey", async (c) => {
+  try {
+    const user = await getReviewUser(c.req.header("x-review-token"));
+    if (!user) return c.json({ error: "Not authenticated" }, 401);
+
+    const sessionId = c.req.param("id");
+    const session = await kv.get(`review_session:${sessionId}`);
+    if (!session || !session.active) return c.json({ error: "No active session" }, 404);
+    if (!session.members?.some((m: any) => m.discord_id === user.discord_id)) {
+      return c.json({ error: "Not a member of this session" }, 403);
+    }
+
+    const { answers, comment } = await c.req.json();
+    const validAnswers = Array.isArray(answers)
+      && answers.length === EDU_SURVEY_QUESTIONS.length
+      && answers.every((a: any, i: number) =>
+        Number.isInteger(a) && a >= 0 && a < EDU_SURVEY_QUESTIONS[i].options.length
+      );
+    if (!validAnswers) {
+      return c.json({ error: `${EDU_SURVEY_QUESTIONS.length} answers required` }, 400);
+    }
+    if (typeof comment !== "string" || comment.length < EDU_SURVEY_COMMENT.min_length) {
+      return c.json({ error: `Comment must be at least ${EDU_SURVEY_COMMENT.min_length} characters` }, 400);
+    }
+
+    // Overwrite an existing response in the same 회차 instead of creating a duplicate
+    const responses = await findEduSurveyResponses(await getSameTitleSessions(session.title));
+    const existing = responses.find((r) => r.value.respondent_id === user.discord_id);
+    const key = existing?.key ?? `edu_survey:${sessionId}:${user.discord_id}`;
+
+    await kv.set(key, {
+      respondent_id: user.discord_id,
+      respondent_name: user.display_name,
+      team_name: user.team_name || "",
+      answers,
+      comment,
+      submitted_at: new Date().toISOString(),
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`Error submitting edu survey: ${error}`);
+    return c.json({ error: "Failed to submit survey" }, 500);
+  }
+});
+
+// Survey CSV export (admin only); optional ?title= limits to one 회차
+app.get("/make-server-d0140d55/review/edu-survey/export", async (c) => {
+  try {
+    const adminToken = c.req.header("x-user-token");
+    const { data: { user } } = await supabase.auth.getUser(adminToken);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+    const titleFilter = c.req.query("title");
+    let sessions = await kv.getByPrefix("review_session:");
+    if (titleFilter) sessions = sessions.filter((s: any) => s.title === titleFilter);
+    sessions.sort((a: any, b: any) =>
+      new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
+    );
+
+    const responses = await findEduSurveyResponses(sessions);
+    const headers = [
+      "회차", "응답자ID", "응답자", "소속팀",
+      ...EDU_SURVEY_QUESTIONS.map((q) => q.name),
+      ...EDU_SURVEY_QUESTIONS.map((q) => `${q.name}(점수)`),
+      EDU_SURVEY_COMMENT.name, "제출시간",
+    ];
+    const rows = responses.map(({ session, value: v }) =>
+      [
+        session.title, v.respondent_id, v.respondent_name, v.team_name,
+        ...v.answers.map((a: number, i: number) => EDU_SURVEY_QUESTIONS[i].options[a]),
+        // 5 = first option (매우 만족 / 매우 쉬웠다 ...) ... 1 = last option
+        ...v.answers.map((a: number) => 5 - a),
+        v.comment, v.submitted_at,
+      ].map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")
+    );
+
+    const csv = "﻿" + [headers.join(","), ...rows].join("\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="edu_survey.csv"`,
+      },
+    });
+  } catch (error) {
+    console.log(`Error exporting edu survey: ${error}`);
+    return c.json({ error: "Failed to export survey" }, 500);
   }
 });
 
