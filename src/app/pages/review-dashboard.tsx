@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router";
-import { LogOut, ArrowLeft, Users, Crown, ChevronRight, Check, Layers, GraduationCap, Pencil } from "lucide-react";
+import { LogOut, ArrowLeft, Users, Crown, ChevronRight, Check, Layers } from "lucide-react";
 import { useReviewUser, reviewApiFetch } from "../../utils/review-auth";
 import { MemberCard } from "../components/review/member-card";
 import { ReviewProgress } from "../components/review/review-progress";
@@ -38,7 +38,6 @@ export function ReviewDashboard() {
   const [session, setSession] = useState<ReviewSession | null>(null);
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
   const [myLeaderReviews, setMyLeaderReviews] = useState<MyReview[]>([]);
-  const [surveyDone, setSurveyDone] = useState(false);
   const [sessionProgress, setSessionProgress] = useState<Record<string, SessionProgress>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -116,8 +115,6 @@ export function ReviewDashboard() {
         setMyReviews(data.reviews || []);
         setMyLeaderReviews(data.leader_reviews || []);
       }
-      const surveyRes = await reviewApiFetch(`/review/sessions/${sess.id}/edu-survey`);
-      setSurveyDone(surveyRes.ok ? !!(await surveyRes.json()).response : false);
     } catch (err) {
       console.error(err);
     } finally {
@@ -349,33 +346,6 @@ export function ReviewDashboard() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* Edu satisfaction survey */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <GraduationCap className="w-4 h-4 text-primary" />
-                <h2 className="font-semibold">교육만족도 조사</h2>
-              </div>
-              <button
-                onClick={() => navigate(`/review/${session.id}/survey`)}
-                className="w-full flex items-center gap-3 p-4 bg-card border border-border rounded-lg hover:border-primary/40 hover:bg-accent/50 transition-all text-left"
-              >
-                <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    surveyDone ? "bg-green-100 text-green-600" : "bg-muted text-foreground/60"
-                  }`}
-                >
-                  {surveyDone ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium text-sm">EDU팀 교육만족도 조사</span>
-                  <span className={`block text-xs ${surveyDone ? "text-green-600" : "text-foreground/60"}`}>
-                    {surveyDone ? "작성 완료" : "미작성"}
-                  </span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-foreground/60 flex-shrink-0" />
-              </button>
             </div>
           </>
         )}
