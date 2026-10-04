@@ -1670,34 +1670,29 @@ app.get("/make-server-d0140d55/review/edu-survey/export", async (c) => {
   }
 });
 
-// ============ EDU Evaluation (Discord /교육평가) ============
+// ============ EDU Evaluation (peer review page → 교육평가) ============
 
 const EDU_EVAL_ROUND = "4기";
 const EDU_EVAL_TITLE = "KHUX 4기 교육 만족도 조사";
 
-// label: shown in the Discord modal (max 45 chars), desc: full question
 const EDU_EVAL_QUESTIONS = [
   {
     id: "satisfaction",
-    label: "1. 교육 세션 만족도",
     desc: "현재 EDU팀에서 진행하는 교육 세션 전반에 얼마나 만족하셨나요?",
     options: ["매우 만족", "만족", "보통", "불만족", "매우 불만족"],
   },
   {
     id: "project_help",
-    label: "2. 프로젝트 수행 도움 정도",
     desc: "EDU팀의 교육이 현재 진행하고 있는 프로젝트를 수행하는 데 얼마나 도움이 되었나요?",
     options: ["매우 도움이 되었다", "도움이 되었다", "보통이다", "별로 도움이 되지 않았다", "전혀 도움이 되지 않았다"],
   },
   {
     id: "difficulty",
-    label: "3. 교육 난이도",
     desc: "현재 교육의 난이도는 적절하다고 생각하나요?",
     options: ["매우 쉬웠다", "쉬웠다", "적절했다", "어려웠다", "매우 어려웠다"],
   },
   {
     id: "quiz_help",
-    label: "4. 복습 퀴즈 도움 정도",
     desc: "교육 세션 이후 진행되는 복습 퀴즈가 교육 내용을 복습하고 이해하는 데 도움이 되었나요?",
     options: ["매우 도움이 되었다", "도움이 되었다", "보통이다", "별로 도움이 되지 않았다", "전혀 도움이 되지 않았다"],
   },
@@ -1705,7 +1700,6 @@ const EDU_EVAL_QUESTIONS = [
 
 const EDU_EVAL_COMMENT = {
   id: "comment",
-  label: "5. 의견 및 제안",
   desc: "학회 교육과 관련하여 전하고 싶은 의견이나 제안이 있다면 자유롭게 작성해주세요.",
   hint: "교육세션을 비롯해 산학협력 프로젝트를 진행하면서 추가적으로 제공되었으면 하는 교육 등도 좋습니다.",
   min_length: 50,
@@ -1734,71 +1728,6 @@ function ephemeral(content: string) {
   return { type: 4, data: { content, flags: 64 } };
 }
 
-function buildEduEvalModal(existing: any) {
-  return {
-    type: 9,
-    data: {
-      custom_id: "edu_eval",
-      title: EDU_EVAL_TITLE,
-      components: [
-        ...EDU_EVAL_QUESTIONS.map((q, qi) => ({
-          type: 18, // Label
-          label: q.label,
-          description: q.desc,
-          component: {
-            type: 3, // String select
-            custom_id: q.id,
-            required: true,
-            min_values: 1,
-            max_values: 1,
-            placeholder: "선택해주세요",
-            options: q.options.map((label, oi) => ({
-              label,
-              value: String(oi),
-              default: existing?.answers?.[qi] === oi,
-            })),
-          },
-        })),
-        {
-          type: 18,
-          label: EDU_EVAL_COMMENT.label,
-          description: EDU_EVAL_COMMENT.desc,
-          component: {
-            type: 4, // Text input
-            custom_id: EDU_EVAL_COMMENT.id,
-            style: 2,
-            required: true,
-            min_length: EDU_EVAL_COMMENT.min_length,
-            max_length: 2000,
-            placeholder: `${EDU_EVAL_COMMENT.hint} (${EDU_EVAL_COMMENT.min_length}자 이상)`.slice(0, 100),
-            ...(existing?.comment ? { value: existing.comment } : {}),
-          },
-        },
-      ],
-    },
-  };
-}
-
-// Collect {custom_id: value(s)} from modal submit, for both Label and legacy Action Row layouts
-function collectModalValues(components: any[]) {
-  const values: Record<string, any> = {};
-  const visit = (c: any) => {
-    if (!c) return;
-    if (c.custom_id) values[c.custom_id] = c.values ?? c.value;
-    if (c.component) visit(c.component);
-    (c.components || []).forEach(visit);
-  };
-  components.forEach(visit);
-  return values;
-}
-
-function teamNameFromRoles(roles: string[] = []) {
-  return Object.values(TEAM_ROLES)
-    .filter((t) => roles.includes(t.role_id))
-    .map((t) => t.name)
-    .join(", ");
-}
-
 // Discord HTTP interactions endpoint (set as Interactions Endpoint URL in the Developer Portal)
 app.post("/make-server-d0140d55/discord/interactions", async (c) => {
   const body = await c.req.text();
@@ -1815,52 +1744,70 @@ app.post("/make-server-d0140d55/discord/interactions", async (c) => {
   if (!member || !discordUser) {
     return c.json(ephemeral("KHUX 서버 안에서 사용해주세요."));
   }
-  const key = `edu_eval:${EDU_EVAL_ROUND}:${discordUser.id}`;
 
   try {
-    if (interaction.type === 2 && interaction.data?.name === "교육평가") {
-      return c.json(buildEduEvalModal(await kv.get(key)));
-    }
-
     // Previously handled by the standalone bot; now answered here since this endpoint receives all interactions
     if (interaction.type === 2 && interaction.data?.name === "리뷰작성") {
-      return c.json(ephemeral("📝 아래 링크에서 디스코드로 로그인한 뒤 피어리뷰를 작성해주세요.\nhttps://khux.vercel.app/review/login?redirect=/review"));
-    }
-
-    if (interaction.type === 5 && interaction.data?.custom_id === "edu_eval") {
-      const values = collectModalValues(interaction.data.components || []);
-      const answers = EDU_EVAL_QUESTIONS.map((q) => Number(values[q.id]?.[0]));
-      const comment = String(values[EDU_EVAL_COMMENT.id] ?? "").trim();
-
-      const validAnswers = answers.every((a, i) =>
-        Number.isInteger(a) && a >= 0 && a < EDU_EVAL_QUESTIONS[i].options.length
-      );
-      if (!validAnswers) return c.json(ephemeral("모든 문항에 응답해주세요. `/교육평가`로 다시 작성할 수 있어요."));
-      if (comment.length < EDU_EVAL_COMMENT.min_length) {
-        return c.json(ephemeral(`의견은 ${EDU_EVAL_COMMENT.min_length}자 이상 작성해주세요. (현재 ${comment.length}자)`));
-      }
-
-      const existing = await kv.get(key);
-      await kv.set(key, {
-        respondent_id: discordUser.id,
-        respondent_name: member.nick || discordUser.global_name || discordUser.username,
-        team_name: teamNameFromRoles(member.roles),
-        answers,
-        comment,
-        submitted_at: new Date().toISOString(),
-      });
-
-      return c.json(ephemeral(
-        existing
-          ? "✅ 교육 만족도 조사 응답이 수정되었습니다. 감사합니다!"
-          : "✅ 교육 만족도 조사가 제출되었습니다. 감사합니다! (`/교육평가`로 언제든 수정할 수 있어요)",
-      ));
+      return c.json(ephemeral("📝 아래 링크에서 디스코드로 로그인한 뒤 피어리뷰(부서·프로젝트)와 교육평가를 작성해주세요.\nhttps://khux.vercel.app/review/login?redirect=/review"));
     }
 
     return c.json(ephemeral("알 수 없는 명령입니다."));
   } catch (error) {
     console.log(`Discord interaction error: ${error}`);
     return c.json(ephemeral("처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+  }
+});
+
+function eduEvalQuestionsPayload() {
+  return {
+    title: EDU_EVAL_TITLE,
+    questions: EDU_EVAL_QUESTIONS.map(({ id, desc, options }) => ({ id, desc, options })),
+    comment_question: { desc: EDU_EVAL_COMMENT.desc, hint: EDU_EVAL_COMMENT.hint, min_length: EDU_EVAL_COMMENT.min_length },
+  };
+}
+
+// Questions + current member's response (Discord login)
+app.get("/make-server-d0140d55/edu-eval/me", async (c) => {
+  try {
+    const user = await getReviewUser(c.req.header("x-review-token"));
+    if (!user) return c.json({ error: "Not authenticated" }, 401);
+    const response = await kv.get(`edu_eval:${EDU_EVAL_ROUND}:${user.discord_id}`);
+    return c.json({ ...eduEvalQuestionsPayload(), response: response ?? null });
+  } catch (error) {
+    console.log(`Error getting edu eval: ${error}`);
+    return c.json({ error: "Failed to get edu eval" }, 500);
+  }
+});
+
+// Submit or update current member's response
+app.post("/make-server-d0140d55/edu-eval/me", async (c) => {
+  try {
+    const user = await getReviewUser(c.req.header("x-review-token"));
+    if (!user) return c.json({ error: "Not authenticated" }, 401);
+
+    const { answers, comment } = await c.req.json();
+    const validAnswers = Array.isArray(answers)
+      && answers.length === EDU_EVAL_QUESTIONS.length
+      && answers.every((a: any, i: number) =>
+        Number.isInteger(a) && a >= 0 && a < EDU_EVAL_QUESTIONS[i].options.length
+      );
+    if (!validAnswers) return c.json({ error: "모든 문항에 응답해주세요." }, 400);
+    if (typeof comment !== "string" || comment.trim().length < EDU_EVAL_COMMENT.min_length) {
+      return c.json({ error: `의견을 ${EDU_EVAL_COMMENT.min_length}자 이상 작성해주세요.` }, 400);
+    }
+
+    await kv.set(`edu_eval:${EDU_EVAL_ROUND}:${user.discord_id}`, {
+      respondent_id: user.discord_id,
+      respondent_name: user.display_name,
+      team_name: user.team_name || "",
+      answers,
+      comment: comment.trim(),
+      submitted_at: new Date().toISOString(),
+    });
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`Error submitting edu eval: ${error}`);
+    return c.json({ error: "Failed to submit edu eval" }, 500);
   }
 });
 
@@ -1874,12 +1821,7 @@ app.get("/make-server-d0140d55/edu-eval/responses", async (c) => {
     const rows = await kv.getByPrefix(`edu_eval:${EDU_EVAL_ROUND}:`);
     rows.sort((a: any, b: any) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime());
 
-    return c.json({
-      title: EDU_EVAL_TITLE,
-      questions: EDU_EVAL_QUESTIONS.map(({ id, desc, options }) => ({ id, desc, options })),
-      comment_question: { desc: EDU_EVAL_COMMENT.desc },
-      responses: rows,
-    });
+    return c.json({ ...eduEvalQuestionsPayload(), responses: rows });
   } catch (error) {
     console.log(`Error listing edu eval responses: ${error}`);
     return c.json({ error: "Failed to list responses" }, 500);

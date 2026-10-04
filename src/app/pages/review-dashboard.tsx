@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router";
-import { LogOut, ArrowLeft, Users, Crown, ChevronRight, Check, Layers } from "lucide-react";
+import { useNavigate, Link } from "react-router";
+import { LogOut, ArrowLeft, Users, Crown, ChevronRight, Check, Layers, GraduationCap } from "lucide-react";
 import { useReviewUser, reviewApiFetch } from "../../utils/review-auth";
 import { MemberCard } from "../components/review/member-card";
 import { ReviewProgress } from "../components/review/review-progress";
@@ -31,14 +31,13 @@ interface SessionProgress {
 
 export function ReviewDashboard() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const forceList = searchParams.get("list") === "1";
   const { user, loading: authLoading, logout } = useReviewUser();
   const [mySessions, setMySessions] = useState<ReviewSession[]>([]);
   const [session, setSession] = useState<ReviewSession | null>(null);
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
   const [myLeaderReviews, setMyLeaderReviews] = useState<MyReview[]>([]);
   const [sessionProgress, setSessionProgress] = useState<Record<string, SessionProgress>>({});
+  const [eduDone, setEduDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -89,12 +88,11 @@ export function ReviewDashboard() {
         );
         setSessionProgress(progressMap);
 
-        // Auto-select only on initial entry (not when forced to list view via ?list=1)
-        if (mine.length === 1 && !forceList) {
-          selectSession(mine[0]);
-        } else {
-          setLoading(false);
-        }
+        const eduRes = await reviewApiFetch("/edu-eval/me");
+        if (eduRes.ok) setEduDone(!!(await eduRes.json()).response);
+
+        // Always show the list: peer review sessions (부서/프로젝트) + 교육평가
+        setLoading(false);
       } catch (err) {
         console.error(err);
         setError("데이터를 불러오는데 실패했습니다.");
@@ -184,15 +182,11 @@ export function ReviewDashboard() {
             <div className="flex items-center gap-2 text-sm text-foreground/70">
               <Layers className="w-4 h-4 text-primary" />
               <span className="font-medium">
-                {mySessions.length > 1
-                  ? `동시 진행 중인 피어리뷰 ${mySessions.length}개`
-                  : "진행 중인 피어리뷰"}
+                진행 중인 리뷰 {mySessions.length + 1}개
               </span>
             </div>
             <p className="text-xs text-foreground/60">
-              {mySessions.length > 1
-                ? "각 세션을 모두 완료해주세요."
-                : "세션을 선택해 리뷰를 작성하세요."}
+              피어리뷰와 교육평가를 모두 완료해주세요.
             </p>
             {mySessions.map((sess) => {
               const prog = sessionProgress[sess.id];
@@ -229,6 +223,28 @@ export function ReviewDashboard() {
                 </button>
               );
             })}
+
+            {/* 교육평가 */}
+            <button
+              onClick={() => navigate("/review/edu")}
+              className={`w-full flex items-center justify-between p-4 bg-card border rounded-xl hover:bg-accent/50 transition-all text-left ${
+                eduDone ? "border-green-500/40 bg-green-50/40" : "border-border hover:border-primary/40"
+              }`}
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <p className="font-medium">교육평가</p>
+                  {eduDone && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                      <Check className="w-3 h-3" /> 완료
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-foreground/60 mt-0.5">KHUX 4기 교육 만족도 조사 — 5문항</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-foreground/60 flex-shrink-0" />
+            </button>
           </div>
         )}
 
@@ -296,14 +312,12 @@ export function ReviewDashboard() {
                   <h1 className="text-2xl font-bold">{session.title}</h1>
                   <p className="text-foreground/60 mt-1">{session.team_name} 팀</p>
                 </div>
-                {mySessions.length > 1 && (
-                  <button
-                    onClick={() => { setSession(null); setMyReviews([]); setMyLeaderReviews([]); }}
-                    className="text-xs text-foreground/60 hover:text-foreground transition-colors"
-                  >
-                    다른 리뷰 선택
-                  </button>
-                )}
+                <button
+                  onClick={() => { setSession(null); setMyReviews([]); setMyLeaderReviews([]); }}
+                  className="text-xs text-foreground/60 hover:text-foreground transition-colors"
+                >
+                  다른 리뷰 선택
+                </button>
               </div>
 
               <div className="mt-4 space-y-3">

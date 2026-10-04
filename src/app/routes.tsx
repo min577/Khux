@@ -16,6 +16,7 @@ import { ReviewLogin } from "./pages/review-login";
 import { DiscordCallback } from "./pages/discord-callback";
 import { ReviewDashboard } from "./pages/review-dashboard";
 import { ReviewForm } from "./pages/review-form";
+import { ReviewEdu } from "./pages/review-edu";
 import { AdminReview } from "./pages/admin-review";
 import { Notice } from "./pages/notice";
 import { Members } from "./pages/members";
@@ -97,6 +98,10 @@ const fullSiteRoutes = [
   {
     path: "/review",
     Component: ReviewDashboard,
+  },
+  {
+    path: "/review/edu",
+    Component: ReviewEdu,
   },
   {
     path: "/review/:sessionId/:targetId",
