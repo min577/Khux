@@ -1866,7 +1866,9 @@ export function AdminDashboard() {
               })()
             )}
 
-            <EduEvalResults />
+            <div className="pt-2">
+              <EduEvalResults />
+            </div>
           </div>
         )}
 

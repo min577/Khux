@@ -53,6 +53,7 @@ export function EduEvalResults() {
   const [data, setData] = useState<EduData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -75,21 +76,33 @@ export function EduEvalResults() {
   const total = data?.responses.length ?? 0;
 
   return (
-    <div className="space-y-4 pt-6 border-t border-border">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      {/* Header (same layout as peer review groups) */}
+      <div className="p-5 flex items-center justify-between gap-3 flex-wrap">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-3 hover:opacity-70 transition-opacity text-left"
+        >
+          <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
           <GraduationCap className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">{data?.title ?? "교육 만족도 조사"}</h2>
-          {data && <span className="text-sm text-muted-foreground">응답 {total}명</span>}
-        </div>
+          <h3 className="font-semibold text-lg">{data?.title ?? "교육 만족도 조사"}</h3>
+          <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">
+            디스코드 /교육평가
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {loading && !data ? "불러오는 중..." : `응답 ${total}명`}
+          </span>
+        </button>
         <div className="flex items-center gap-2">
           <button
             onClick={load}
             disabled={loading}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
+            title="새로고침"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            새로고침
           </button>
           <button
             onClick={() => data && downloadCsv(data)}
@@ -97,24 +110,23 @@ export function EduEvalResults() {
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5" />
-            CSV 다운로드
+            CSV
           </button>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">디스코드 <code>/교육평가</code> 명령으로 제출된 응답입니다.</p>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      {loading && !data && <p className="text-sm text-muted-foreground animate-pulse">불러오는 중...</p>}
+      {error && <p className="px-5 pb-4 text-sm text-destructive">{error}</p>}
 
-      {data && (
-        <>
+      {/* Expanded results */}
+      {expanded && data && (
+        <div className="border-t border-border p-5 space-y-4">
           {data.questions.map((q, qi) => {
             const counts = q.options.map((_, oi) => data.responses.filter((r) => r.answers[qi] === oi).length);
             const avg = total ? data.responses.reduce((sum, r) => sum + (5 - r.answers[qi]), 0) / total : 0;
             return (
-              <div key={q.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
+              <div key={q.id} className="border border-border rounded-lg p-4 space-y-3">
                 <div className="flex items-start justify-between gap-4">
-                  <h3 className="font-medium text-sm">{qi + 1}. {q.desc}</h3>
+                  <h4 className="font-medium text-sm">{qi + 1}. {q.desc}</h4>
                   {total > 0 && (
                     <span className="shrink-0 text-xs text-muted-foreground">평균 {avg.toFixed(2)} / 5</span>
                   )}
@@ -137,14 +149,14 @@ export function EduEvalResults() {
             );
           })}
 
-          <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-            <h3 className="font-medium text-sm">5. {data.comment_question.desc}</h3>
+          <div className="border border-border rounded-lg p-4 space-y-3">
+            <h4 className="font-medium text-sm">5. {data.comment_question.desc}</h4>
             {total === 0 ? (
               <p className="text-sm text-muted-foreground">아직 응답이 없습니다.</p>
             ) : (
               <ul className="space-y-2">
                 {data.responses.map((r) => (
-                  <li key={r.respondent_id} className="border border-border rounded-lg p-3">
+                  <li key={r.respondent_id} className="bg-muted/30 rounded-lg p-3">
                     <p className="text-xs text-muted-foreground mb-1">
                       {r.respondent_name}{r.team_name ? ` · ${r.team_name}` : ""} ·{" "}
                       {new Date(r.submitted_at).toLocaleString("ko-KR")}
@@ -155,7 +167,7 @@ export function EduEvalResults() {
               </ul>
             )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
