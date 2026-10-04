@@ -1824,6 +1824,11 @@ app.post("/make-server-d0140d55/discord/interactions", async (c) => {
       return c.json(buildEduEvalModal(await kv.get(key)));
     }
 
+    // Previously handled by the standalone bot; now answered here since this endpoint receives all interactions
+    if (interaction.type === 2 && interaction.data?.name === "리뷰작성") {
+      return c.json(ephemeral("📝 아래 링크에서 디스코드로 로그인한 뒤 피어리뷰를 작성해주세요.\nhttps://khux.vercel.app/review/login?redirect=/review"));
+    }
+
     if (interaction.type === 5 && interaction.data?.custom_id === "edu_eval") {
       const values = collectModalValues(interaction.data.components || []);
       const answers = EDU_EVAL_QUESTIONS.map((q) => Number(values[q.id]?.[0]));
